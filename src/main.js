@@ -15,6 +15,7 @@ import { measFrame } from './misure.js';
 import { namesFrame } from './nomi.js';
 import { initPano } from './panorama.js';
 import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
+import { initPwa } from './pwa.js';
 
 /* Punto di ingresso: carica la piantina, collega il puntatore e fa girare il ciclo di render. */
 
@@ -166,6 +167,7 @@ function start(){
   frame();
   initStorage();
   initArtifact();
+  initPwa();
 }
 async function boot(){
   /* attendo il font per le etichette (con tempo massimo) mentre carico la piantina */

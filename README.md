@@ -16,10 +16,21 @@ e poi apri <http://localhost:8000>. Aprire `index.html` con doppio clic non funz
 
 Una volta sola: nel repository vai su **Settings → Pages**, in *Build and deployment* scegli **Deploy from a branch**, branch `main`, cartella `/ (root)`, e salva. Dopo un minuto la piantina è su `https://s-pinto.github.io/PiantinaCasa/` e si aggiorna da sola a ogni modifica di `main`.
 
+### Come app (PWA)
+
+Dal sito pubblicato la piantina si installa come un’app, con la sua icona:
+
+- **Android / Chrome / Edge**: menu **⋯ → Installa come app** dentro la piantina, oppure *Installa* nel menu del browser.
+- **iPhone / iPad**: in Safari **Condividi → Aggiungi alla schermata Home**.
+- **Computer**: l’icona di installazione nella barra degli indirizzi di Chrome o Edge.
+
+Dopo la prima apertura con internet funziona anche offline: `sw.js` (service worker) salva pagina, moduli, `data/plan.json`, three.js e il font. I file del sito sono presi prima dalla rete, così ogni modifica pubblicata su `main` arriva da sola; se la rete manca si usa la copia salvata. Le modifiche fatte nell’editor restano salvate sul dispositivo come nel browser.
+
 ## Com’è fatta
 
 ```
 index.html          la pagina: interfaccia (dentro un <template>) e mappa degli import di three.js
+manifest.webmanifest, sw.js, icons/   app installabile: nome, icone, copia offline
 css/style.css       lo stile
 data/plan.json      il modello della casa (muri, aperture, pavimenti, parapetti, nomi, arredi, versioni, impianti)
 src/                il codice, in moduli ES senza passaggi di build
@@ -49,6 +60,7 @@ tools/              strumenti per chi sviluppa
 | `contesto.js` | il palazzo sotto l’attico, le unità vicine, strade, alberi e palazzine del quartiere |
 | `tetto.js` | il tetto dell’attico (solaio a quadrotti, muretto, vano scala), da mostrare o nascondere |
 | `misure.js` | quote interne delle stanze, superfici, ingombro totale, metro a due punti |
+| `pwa.js` | app installabile: registra il service worker, pulsante «Installa come app» nel menu |
 | `panorama.js` | Panorama 3D: vista cinematografica a tutto schermo, foto in PNG |
 
 three.js (r187) arriva dalla CDN jsDelivr tramite la *import map* in `index.html`.
