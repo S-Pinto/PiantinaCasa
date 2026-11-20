@@ -110,10 +110,10 @@ function fitShot(dir, fov, top){
 }
 function preset(m){
   if (m === 'plan') return fitShot(new THREE.Vector3(0, 1, 0.0004).normalize(), PLAN_FOV, true);
-  /* in verticale giro un po’ la vista: la casa è lunga e stretta, di sbieco riempie meglio lo schermo */
+  /* in verticale la casa (lunga e stretta) è limitata dalla larghezza: guardo più dall’alto, così guadagna profondità */
   const a = aspect(), turn = THREE.MathUtils.clamp((1.15 - a) / .55, 0, 1);
-  const az = turn * 24 * Math.PI / 180, el = (40 + turn * 10) * Math.PI / 180;
-  const dir = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
+  const el = (40 + turn * 16) * Math.PI / 180;
+  const dir = new THREE.Vector3(0, Math.sin(el), Math.cos(el));
   return fitShot(dir, ORBIT_FOV, false);
 }
 function applyLook(){ camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ'); }
