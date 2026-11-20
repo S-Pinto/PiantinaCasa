@@ -95,6 +95,8 @@ body[data-editing="1"] .dock{ top:116px; max-height:calc(100% - 184px); }
   .levels button{ flex:1; flex-direction:column; justify-content:center; gap:2px; height:50px; padding:0 2px; font-size:11px; }
   body[data-editing="1"] .dock{ top:auto; max-height:none; }
   body[data-editing="1"] .hint{ top:128px; }
+  /* in modifica la vista è sempre la pianta: sul telefono nascondo i pulsanti delle viste, così annulla/ripeti e Fine non li coprono */
+  body[data-editing="1"] .topbar .seg{ display:none; }
   .dock .sep.grow{ flex:0 0 1px; min-height:34px; }
 }
 
