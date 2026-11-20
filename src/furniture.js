@@ -263,7 +263,148 @@ const FURN = {
       rod(g,.008,[0,H*.26,0],[lx,y,lz],'#3d6b2f');
       const leaf = new THREE.Mesh(new THREE.SphereGeometry(1,12,6), fm(i%3 ? C : shade(C,1.25),{ roughness:.55, side:THREE.DoubleSide }));
       leaf.scale.set(W*.2, .012, W*.15); leaf.position.set(lx*1.1, y, lz*1.1); leaf.rotation.set(0, -a, .35); leaf.castShadow = true; g.add(leaf);
-    } } }
+    } } },
+  /* ---------- versione rinnovata (immagini AI) ---------- */
+  quadri:   { n:'Quadri', cat:'Zona giorno', w:1.6, d:.03, h:.8, z:1.15, c:'#e8dcc6', draw:(g,W,D,H,C) => {
+    const fr = [[-.36,.18,.2,.46],[.02,.33,.34,.3],[.42,.12,.4,.56],[-.02,-.02,.14,.2],[.17,-.02,.16,.2]];
+    fr.forEach((f, i) => { const fw = f[2]*W/1.6*2, fh = f[3]*H/.8, x = f[0]*W/1.6*1.1, y = f[1]*H/.8 + (H - fh)/2 - .1;
+      fbox(g,fw,fh,D,x,y,0,'#f3eee4',{ roughness:.8 });
+      fbox(g,fw*.55,fh*.45,.004,x+fw*.08*(i%2 ? 1 : -1),y+fh*.25,D/2+.002,i%2 ? '#b89870' : '#8a6e52',{ roughness:.9 }); }); } },
+  faretti:  { n:'Binario con faretti', cat:'Luci', w:1.6, d:.06, h:.2, z:2.78, c:'#f2f2f0', draw:(g,W,D,H,C) => {
+    fbox(g,W,.035,D,0,H-.035,0,C);
+    const lit = gm('#fff6e0','#ffd9a0',2,true);
+    [-.33,0,.33].forEach(k => { rod(g,.012,[k*W,H-.035,0],[k*W,H-.07,0],C); const c = fcyl(g,.035,.11,k*W,H-.18,.02,C); c.rotation.x = -.35;
+      const b = new THREE.Mesh(new THREE.CircleGeometry(.03,14), lit); b.rotation.x = Math.PI/2+.35; b.position.set(k*W,H-.185,.04); g.add(b); }); } },
+  scaffalescala:{ n:'Libreria a scala', cat:'Zona giorno', w:.45, d:.32, h:1.85, c:'#f4f4f2', draw:(g,W,D,H,C) => {
+    [-1,1].forEach(s => rod(g,.018,[s*(W/2-.02),0,D/2-.02],[s*(W/2-.02),H,-D/2+.04],C));
+    const cols = ['#4fa3b8','#e0858a','#2f8fbf','#d8d2c4','#7fb0a8'];
+    for (let k=0;k<6;k++){ const t = (k+.4)/6, y = t*H, dz = (D/2-.02) - t*(D-.06), dd = D*(1-t*.6);
+      fbox(g,W-.04,.02,dd,0,y,dz-dd/2+.02,C); fbox(g,W*.5,.12,dd*.5,-.05,y+.02,dz-dd/2+.02,cols[k%cols.length]); } } },
+  lettoimb: { n:'Letto imbottito', cat:'Camera', w:1.7, d:2.15, h:.5, c:'#e8e0d4', draw:(g,W,D,H,C) => {
+    fbox(g,W,.32,D-.12,0,.06,.06,C,{ roughness:.95 }); fbox(g,W-.06,.2,D-.2,0,.38,.08,'#ece8e1',{ roughness:.95 });
+    fbox(g,W+.04,1.05,.18,0,0,-D/2+.09,C,{ roughness:.95 });
+    [-1,1].forEach(s => fbox(g,W/2-.03,.36,.14,s*W/4,.62,-D/2+.2,shade(C,1.04),{ roughness:.95 }));
+    fbox(g,W+.06,.025,.75,0,.58,.42,'#3f6b5a',{ roughness:.95 }); fbox(g,W+.08,.02,1.0,0,.575,.32,'#9a9a96',{ roughness:.95 });
+    [[-.45,'#f2eee6'],[.45,'#f2eee6'],[-.25,'#3f6b5a'],[.25,'#7c837f'],[0,'#3f6b5a']].forEach((q,i) => {
+      const c = fbox(g,.45 - (i>1 ? .1 : 0),.3 - (i>1 ? .08 : 0),.12,q[0]*W/1.7,.58,-D/2+.33+(i>1 ? .08 : 0),q[1],{ roughness:.95 }); c.rotation.x = -.25; }); } },
+  armadiospecchi:{ n:'Armadio con specchi', cat:'Camera', w:2.7, d:.62, h:2.5, c:'#e3dbd0', draw:(g,W,D,H,C) => {
+    fbox(g,W,H,D-.03,0,0,-.015,C,{ roughness:.6 });
+    const n = 6, mir = { metalness:.95, roughness:.05 };
+    for (let k=0;k<n;k++){ const x = -W/2+(k+.5)*W/n, m = k === 1 || k === 4;
+      fbox(g,W/n-.012,H-.04,.02,x,.02,D/2-.01,m ? '#dfe6ea' : C,m ? mir : { roughness:.5 });
+      if (!m) fbox(g,.015,.9,.02,x+(k%2 ? -1 : 1)*(W/n/2-.05),.7,D/2+.01,'#b9b1a5'); } } },
+  plafoniera:{ n:'Plafoniera di cristallo', cat:'Luci', w:.5, d:.5, h:.16, z:2.82, c:'#f4f4f6', draw:(g,W,D,H,C) => {
+    fcyl(g,W/2,.03,0,H-.03,0,C,INOX);
+    const m = gm('#ffffff','#fff0d0',1.2,true); m.flatShading = true;
+    for (let k=0;k<3;k++){ const r = new THREE.Mesh(new THREE.CylinderGeometry(W/2*(.95-k*.22),W/2*(.95-k*.22),.05,12,1,true), m); r.position.y = H-.06-k*.04; g.add(r); } } },
+  ledparete:{ n:'Cornice LED a parete', cat:'Luci', w:3, d:.04, h:2.7, c:'#ffe2b0', draw:(g,W,D,H,C) => {
+    const m = gm('#fff1d6',C,2,false);
+    gbox(g,W,.03,D,0,H-.03,0,m); gbox(g,.03,H,D,-W/2,0,0,m); gbox(g,.03,H,D,W/2,0,0,m); } },
+  paretetv: { n:'Parete attrezzata TV', cat:'Zona giorno', w:3.4, d:.45, h:2.25, c:'#f1ece4', draw:(g,W,D,H,C) => {
+    const wood = '#c49a6c', led = gm('#fff0d8','#ffcf8f',1.3,false), sw = .55;
+    fbox(g,W-2*sw,.42,D,0,.12,0,C,{ roughness:.4 }); fbox(g,(W-2*sw)*.3,.1,.02,0,.3,D/2+.002,wood);
+    fbox(g,W-2*sw,1.1,.06,0,.54,-D/2+.03,shade(C,.96),{ roughness:.5 });
+    fbox(g,1.45,.84,.05,0,.75,-D/2+.08,'#141416',{ roughness:.25 }); fbox(g,1.41,.8,.004,0,.77,-D/2+.106,'#06080b',{ roughness:.08, metalness:.4 });
+    fbox(g,.8,.07,.09,0,.56,-D/2+.15,'#1b1b1d');
+    fbox(g,W-2*sw,.4,D*.8,0,1.75,-D*.1,C,{ roughness:.4 }); fbox(g,.5,.4,D*.8,.4,1.75,-D*.1+.002,wood);
+    [-1,1].forEach(s => { const x = s*(W/2-sw/2);
+      fbox(g,sw,.75,D,x,.12,0,C,{ roughness:.4 });
+      fbox(g,sw,H-.87,.02,x,.87,-D/2+.01,wood); fbox(g,.02,H-.87,D,x-sw/2+.01,.87,0,C); fbox(g,.02,H-.87,D,x+sw/2-.01,.87,0,C); fbox(g,sw,.03,D,x,H-.03,0,C);
+      for (let k=0;k<3;k++){ const y = .87+.02+k*(H-.9)/3; fbox(g,sw-.04,.025,D-.03,x,y,0,wood); gbox(g,sw-.06,.008,.01,x,y+(H-.9)/3-.05,D/2-.03,led);
+        fbox(g,.12,.18-.05*k,.1,x-.08*s,y+.025,0,['#d9d2c4','#8c9a8a','#b8a58c'][k]); } }); } },
+  tavolinomarmo:{ n:'Tavolino in marmo', cat:'Zona giorno', w:1.1, d:.65, h:.4, c:'#f2f0ec', draw:(g,W,D,H,C) => {
+    fbox(g,W,.03,D,0,H-.03,0,C,{ roughness:.2 }); const k = '#8d8a85';
+    LEGS4.forEach(p => fbox(g,.02,H-.03,.02,p[0]*(W/2-.02),0,p[1]*(D/2-.02),k,INOX));
+    [-1,1].forEach(s => { fbox(g,W-.04,.02,.02,0,.05,s*(D/2-.02),k,INOX); fbox(g,.02,.02,D-.04,s*(W/2-.02),.05,0,k,INOX); });
+    fcyl(g,.12,.05,0,H,0,'#cfc6b8'); } },
+  tavolomarmo:{ n:'Tavolo in marmo', cat:'Pranzo e cucina', w:2, d:1.0, h:.76, c:'#eeece8', draw:(g,W,D,H,C) => {
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(1,1,1,40), fm(C,{ roughness:.18 }));
+    top.scale.set(W/2,.03,D/2); top.position.y = H-.015; top.castShadow = top.receiveShadow = true; g.add(top);
+    fbox(g,W*.86,.03,D*.86,0,H-.06,0,C,{ roughness:.18 }).scale.set(1,1,.7);
+    const k = '#5d5f62'; [-1,1].forEach(s => { [-1,1].forEach(t => { const l = rod(g,.035,[s*W*.12,H-.06,0],[s*W*.33,0,t*D*.3],k,{ metalness:.5, roughness:.4 }); l.castShadow = true; }); }); } },
+  sediaimb: { n:'Sedia imbottita', cat:'Pranzo e cucina', w:.5, d:.55, h:.86, c:'#ddd3c4', draw:(g,W,D,H,C) => {
+    const k = '#1d1d1f';
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p => rod(g,.012,[p[0]*(W/2-.08),.44,p[1]*(D/2-.1)],[p[0]*(W/2-.03),0,p[1]*(D/2-.03)],k));
+    fbox(g,W,.09,D-.04,0,.43,.02,C,{ roughness:.95 });
+    const b = fbox(g,W,.44,.07,0,.5,-D/2+.06,C,{ roughness:.95 }); b.rotation.x = -.12; } },
+  sgabelloimb:{ n:'Sgabello imbottito', cat:'Pranzo e cucina', w:.45, d:.48, h:1.0, c:'#d9cdbd', draw:(g,W,D,H,C) => {
+    const k = '#3b2a20';
+    LEGS4.forEach(p => rod(g,.014,[p[0]*(W/2-.08),.66,p[1]*(D/2-.1)],[p[0]*(W/2-.04),0,p[1]*(D/2-.04)],k));
+    fbox(g,W-.1,.02,.02,0,.25,D/2-.08,k);
+    fbox(g,W,.08,D-.06,0,.64,.02,C,{ roughness:.95 }); const b = fbox(g,W,.32,.06,0,.72,-D/2+.06,C,{ roughness:.95 }); b.rotation.x = -.12; } },
+  globo:    { n:'Lampada a sfera di vetro', cat:'Luci', w:.3, d:.3, h:.32, z:1.75, c:'#6e6b6a', draw:(g,W,D,H,C) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(W/2,24,16), fm(C,{ transparent:true, opacity:.55, roughness:.08, metalness:.3, depthWrite:false }));
+    s.position.y = W/2; g.add(s);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.035,12,8), gm('#fff6e0','#ffcf8a',2,true)); b.position.y = W/2; g.add(b);
+    fcyl(g,.03,.05,0,W-.02,0,'#2a2a2c'); fbox(g,.006,Math.max(.05, ceilH() - 1.75 - W),.006,0,W+.03,0,'#2a2a2c'); } },
+  lampadageo:{ n:'Lampadario geometrico', cat:'Luci', w:.55, d:.55, h:.6, z:1.9, c:'#c9a45a', draw:(g,W,D,H,C) => {
+    const geo = new THREE.OctahedronGeometry(1,0), e = new THREE.EdgesGeometry(geo);
+    const l = new THREE.LineSegments(e, new THREE.LineBasicMaterial({ color:C })); l.scale.set(W/2,H/2,D/2); l.position.y = H/2; g.add(l);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.05,12,8), gm('#fff6e0','#ffcf8a',2,true)); b.position.y = H/2; g.add(b);
+    fbox(g,.006,Math.max(.05, ceilH() - 1.9 - H),.006,0,H,0,C); } },
+  piantana:{ n:'Lampada da terra', cat:'Luci', w:.3, d:.3, h:1.6, c:'#1d1d1f', draw:(g,W,D,H,C) => {
+    fcyl(g,.13,.02,0,0,0,C); rod(g,.01,[0,0,0],[0,H-.15,0],C); rod(g,.01,[0,H-.15,0],[.12,H-.1,0],C);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.11,20,14), gm('#fbf8f2','#ffe2b0',1.2,true)); b.position.set(.14,H-.12,0); g.add(b); } },
+  mobileled:{ n:'Mobile con nicchie e LED', cat:'Zona giorno', w:.9, d:.42, h:2.1, c:'#f1ece4', draw:(g,W,D,H,C) => {
+    const wood = '#c49a6c', led = gm('#fff0d8','#ffcf8f',1.3,false);
+    fbox(g,W,.85,D,0,0,0,C,{ roughness:.4 }); fbox(g,.006,.8,.01,0,.03,D/2+.002,shade(C,.8));
+    fbox(g,W,.55,D,0,.85,-.01,wood); fbox(g,W,.03,D,0,.85,0,C); fbox(g,W-.04,.012,.01,0,1.36,D/2-.03,led);
+    fcyl(g,.05,.16,-.2,.88,0,'#efe9df'); fcyl(g,.04,.1,.15,.88,0,'#cbbfa8');
+    fbox(g,W,H-1.4,D,0,1.4,0,C,{ roughness:.4 }); fbox(g,.006,H-1.44,.01,0,1.42,D/2+.002,shade(C,.8)); } },
+  penisolamarmo:{ n:'Penisola in marmo', cat:'Pranzo e cucina', w:1.8, d:.7, h:.92, c:'#f0eeea', draw:(g,W,D,H,C) => {
+    const mm = { roughness:.2 }; fbox(g,W,.05,D,0,H-.05,0,C,mm);
+    fbox(g,.05,H-.05,D,-W/2+.025,0,0,C,mm); fbox(g,.05,H-.05,D,W/2-.025,0,0,C,mm); fbox(g,W-.1,H-.05,.04,0,0,-D/2+.02,C,mm);
+    fbox(g,W-.1,H-.05,D-.35,0,0,-.1,'#bdb3a7'); } },
+  pensilevetro:{ n:'Pensili con vetrina', cat:'Pranzo e cucina', w:1.6, d:.35, h:.9, z:1.45, c:'#1b1b1d', draw:(g,W,D,H,C) => {
+    fbox(g,W,H,D-.03,0,0,-.015,'#2b2a29');
+    const n = Math.max(1, Math.round(W/.4)), led = gm('#fff0d8','#ffcf8f',1.6,false);
+    for (let k=0;k<n;k++){ const x = -W/2+(k+.5)*W/n;
+      fbox(g,W/n-.05,H-.05,.006,x,.025,D/2,'#cfdbe0',{ transparent:true, opacity:.3, roughness:.05, depthWrite:false });
+      [[-1,0],[1,0]].forEach(q => fbox(g,.02,H,.02,x+q[0]*(W/n/2-.01),0,D/2,C));
+      fbox(g,W/n-.03,.015,D-.06,x,H*.5,0,'#cfdbe0',{ transparent:true, opacity:.5 });
+      [.18,H*.5+.03].forEach(y => { fcyl(g,.03,.12,x-.06,y,0,'#f4f4f2'); fcyl(g,.03,.12,x+.06,y,0,'#f4f4f2'); });
+      gbox(g,W/n-.05,.01,.01,x,H-.03,D/2-.05,led); }
+    fbox(g,W,.02,D,0,H-.02,0,C); fbox(g,W,.02,D,0,0,0,C);
+    gbox(g,W-.04,.01,.01,0,-.012,D/2-.05,led); } },
+  /* terrazzo */
+  pergola:  { n:'Pergola bioclimatica', cat:'Terrazzo', w:4, d:3, h:2.6, c:'#e6e3dd', draw:(g,W,D,H,C) => {
+    const p = .12;
+    LEGS4.forEach(q => fbox(g,p,H,p,q[0]*(W/2-p/2),0,q[1]*(D/2-p/2),C,{ roughness:.5 }));
+    [-1,1].forEach(s => { fbox(g,W,.2,p,0,H-.2,s*(D/2-p/2),C,{ roughness:.5 }); fbox(g,p,.2,D,s*(W/2-p/2),H-.2,0,C,{ roughness:.5 }); });
+    const n = Math.round((W-2*p)/.2);
+    for (let k=0;k<n;k++){ const l = fbox(g,.16,.02,D-2*p,-W/2+p+(k+.5)*(W-2*p)/n,H-.1,0,C,{ roughness:.5 }); l.rotation.z = .5; }
+    const led = gm('#fff1d6','#ffcf8a',1.8,true);
+    [-1,1].forEach(s => { gbox(g,W-2*p,.015,.015,0,H-.21,s*(D/2-p-.01),led); gbox(g,.015,.015,D-2*p,s*(W/2-p-.01),H-.21,0,led); });
+    const bulbs = gm('#fff6e0','#ffd28a',2.2,true);
+    for (let k=0;k<4;k++) for (let j=0;j<14;j++){ const x = -W/2+p+(j+.5)*(W-2*p)/14, z = -D/2+p+(k+.5)*(D-2*p)/4;
+      const b = new THREE.Mesh(new THREE.SphereGeometry(.02,6,4), bulbs); b.position.set(x,H-.35-Math.sin((j+.5)/14*Math.PI)*.15,z); g.add(b); } } },
+  tavoloesterno:{ n:'Tavolo da esterno', cat:'Terrazzo', w:2.2, d:.95, h:.75, c:'#a97e55', draw:(g,W,D,H,C) => {
+    const n = 6; for (let k=0;k<n;k++) fbox(g,W,.035,D/n-.01,0,H-.035,-D/2+(k+.5)*D/n,shade(C,k%2 ? 1 : .94),{ roughness:.8 });
+    const k = '#3a3a3c'; [-1,1].forEach(s => { fbox(g,.06,H-.035,D-.15,s*(W/2-.2),0,0,k); });
+    [-.6,-.2,.2,.6].forEach((x,i) => { fcyl(g,.03,.08,x*W/2,H,(i%2 ? .15 : -.15),'#f3efe6'); fcyl(g,.13,.01,x*W/2,H,(i%2 ? -.25 : .25),'#f6f3ee'); });
+    const c = new THREE.Mesh(new THREE.SphereGeometry(.025,8,6), gm('#fff3dc','#ffc878',2,true)); c.position.set(0,H+.06,0); g.add(c); fcyl(g,.04,.04,0,H,0,'#e9e2d3'); } },
+  sediaesterna:{ n:'Sedia da esterno', cat:'Terrazzo', w:.52, d:.55, h:.82, c:'#cfc5b6', draw:(g,W,D,H,C) => {
+    const k = '#7a6a58'; LEGS4.forEach(p => rod(g,.015,[p[0]*(W/2-.07),.44,p[1]*(D/2-.08)],[p[0]*(W/2-.03),0,p[1]*(D/2-.03)],k));
+    fbox(g,W,.07,D-.05,0,.42,.02,C,{ roughness:.95 }); const b = fbox(g,W,.4,.06,0,.48,-D/2+.05,C,{ roughness:.95 }); b.rotation.x = -.15;
+    [-1,1].forEach(s => fbox(g,.05,.18,D-.1,s*(W/2-.025),.48,0,C,{ roughness:.95 })); } },
+  lettino:  { n:'Lettino prendisole', cat:'Terrazzo', w:.7, d:1.95, h:.4, c:'#d9d3c8', draw:(g,W,D,H,C) => {
+    const k = '#a07a52'; fbox(g,W,.08,D,0,.18,0,k,{ roughness:.7 }); LEGS4.forEach(p => fbox(g,.05,.18,.05,p[0]*(W/2-.05),0,p[1]*(D/2-.08),k));
+    fbox(g,W-.06,.08,D*.66,0,.26,D*.17,C,{ roughness:.95 });
+    const b = fbox(g,W-.06,.08,D*.36,0,.3,-D*.32,C,{ roughness:.95 }); b.rotation.x = .6; b.position.y += .17;
+    fbox(g,W*.5,.1,.2,0,.55,-D*.4,'#efebe3',{ roughness:.95 }).rotation.x = .6; } },
+  barbecue: { n:'Barbecue a gas', cat:'Terrazzo', w:1.3, d:.6, h:.95, c:'#b9bdc1', draw:(g,W,D,H,C) => {
+    fbox(g,W,.85,D,0,0,0,'#3a3b3d'); fbox(g,W-.4,.8,.02,0,.03,D/2,C,INOX); fbox(g,.006,.75,.03,0,.06,D/2+.005,'#7e8286');
+    fbox(g,W,.03,D,0,.85,0,'#2a2b2d');
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,W-.42,20,1,false,0,Math.PI), fm(C,INOX)); lid.rotation.z = Math.PI/2; lid.position.set(0,.88,-.02); lid.castShadow = true; g.add(lid);
+    fbox(g,W-.5,.02,.03,0,1.05,.22,'#d0d3d6',INOX); } },
+  vasopianta:{ n:'Pianta in vaso grande', cat:'Terrazzo', w:.6, d:.6, h:1.6, c:'#3e7a3a', draw:(g,W,D,H,C) => {
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(W*.42,W*.32,H*.3,20), fm('#8d8172',{ roughness:.95 }));
+    pot.position.y = H*.15; pot.castShadow = true; g.add(pot);
+    for (let i=0;i<9;i++){
+      const a = i*2.4, rr = W*(.05 + .25*((i*37)%10)/10), y = H*(.5 + .48*((i*53)%10)/10), lx = Math.cos(a)*rr, lz = Math.sin(a)*rr;
+      rod(g,.01,[0,H*.3,0],[lx,y-.1,lz],'#4d6b2c');
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(1,10,6), fm(i%2 ? C : shade(C,1.2),{ roughness:.55, side:THREE.DoubleSide }));
+      leaf.scale.set(.06, W*.35, .015); leaf.position.set(lx*1.15, y, lz*1.15); leaf.rotation.set(Math.sin(a)*.35, -a, Math.cos(a)*.35); leaf.castShadow = true; g.add(leaf); } } }
 };
 
 export { FURN, GLOW, fbox, fcyl };
