@@ -56,7 +56,7 @@
       <label class="opt" style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="optViewOnly" style="width:20px;height:20px;margin:0;accent-color:var(--accent)"> <span>Solo da guardare, senza gli strumenti di modifica</span></label>
       <p class="note" style="margin-top:8px">È un unico file da allegare a una mail: chi lo riceve lo apre col browser, senza accedere a Claude. Serve una connessione a internet.</p>
     </div>
-    <label class="mrow edit-only" hidden=""><span>Aggancio alla griglia</span><input type="checkbox" id="optSnap" checked=""></label>
+    <label class="mrow edit-only" hidden=""><span>Aggancio automatico</span><input type="checkbox" id="optSnap" checked=""></label>
     <label class="mrow edit-only" hidden=""><span>Allunga i muri collegati</span><input type="checkbox" id="optLink" checked=""></label>
     <div class="edit-only" hidden="" style="margin-top:12px">
       <button type="button" class="btn primary" id="saveFile" style="width:100%">Salva nella piantina condivisa</button>
@@ -84,7 +84,9 @@
   </div>
   <div class="cmpui" id="cmpui" data-dir="h" hidden=""><div class="div"></div><p class="tag ta" id="cmpA"></p><p class="tag tb" id="cmpB"></p></div>
 
+  <div class="levels glass edit-only" id="levels" role="group" aria-label="Cosa vuoi modificare" hidden=""></div>
   <nav class="dock glass edit-only" id="dock" aria-label="Strumenti di modifica" hidden=""></nav>
+  <div class="readout" id="readout" aria-live="polite" hidden=""></div>
 
   <aside class="sheet glass" id="sheet" data-collapsed="0" hidden="">
     <div class="shead">

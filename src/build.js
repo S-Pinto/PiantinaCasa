@@ -105,14 +105,14 @@ function buildWall(w, wi){
   const solidPiece = (lo,hi,h0,h1) => { if (hi - lo > 0.01) part(lo,hi,h0,h1,t,wm,true); };
   const lintel = (lo,hi,h0,h1) => part(lo,hi,h0,h1,t,wm,'nocol');
 
-  const frame = (lo,hi,h0,h1) => {
+  /* telaio con n ante: un montante fra un’anta e l’altra */
+  const frame = (lo,hi,h0,h1,n) => {
     const ft = 3, fw = 1.6;
     part(lo,lo+fw,h0,h1,ft,frameMat,false);
     part(hi-fw,hi,h0,h1,ft,frameMat,false);
     part(lo,hi,h1-0.05,h1,ft,frameMat,false);
     if (h0 > 0) part(lo,hi,h0,h0+0.05,ft,frameMat,false);
-    const mid = (lo+hi)/2;
-    part(mid-fw/2,mid+fw/2,h0,h1,ft,frameMat,false);
+    for (let k=1; k<n; k++){ const q = lo + k*(hi-lo)/n; part(q-fw/2,q+fw/2,h0,h1,ft,frameMat,false); }
     if (horiz) box(lo+fw,hi-fw,c-0.35,c+0.35,h0,h1,glassMat,wallsG,false,false);
     else box(c-0.35,c+0.35,lo+fw,hi-fw,h0,h1,glassMat,wallsG,false,false);
   };
@@ -132,13 +132,16 @@ function buildWall(w, wi){
   iv.forEach(o => {
     solidPiece(cur, o.lo, 0, H);
     cur = o.hi;
-    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD); }
-    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD); }
+    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD, paneCount(o)); }
+    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD, paneCount(o)); }
     else if (o.t === 'door'){ lintel(o.lo, o.hi, HEAD, H); leaf(o); }
     else { lintel(o.lo, o.hi, HEAD, H); }
   });
   solidPiece(cur, b + t/2 + 0.04, 0, H);
 }
+
+/* Numero di ante di una finestra o porta-finestra: o.n se scelto, altrimenti 2 (come prima) */
+const paneCount = o => clamp(Math.round(o.n || 2), 1, 24);
 
 function buildColumn(c){
   box(c.x0,c.x1,c.y0,c.y1,0,H,wallMatsFor(c.col,c.tx),wallsG,true,true,c.tx ? TEXDEF[c.tx].tile : 0);
@@ -158,7 +161,7 @@ function buildRail(r){
     if (r.kind === 'fence'){
       buildFence(r, a, b, horiz);
     } else if (r.kind === 'glazed'){
-      const sill = 0.9, pitchPx = 40;
+      const sill = 0.9, pitchPx = clamp(r.pw || 1.6, .2, 4) / S;      /* r.pw = larghezza di ogni vetro in metri */
       const lo = (horiz ? Math.min(a[0],b[0]) : Math.min(a[1],b[1])) - t/2;
       const hi = (horiz ? Math.max(a[0],b[0]) : Math.max(a[1],b[1])) + t/2;
       const c = horiz ? a[1] : a[0];
@@ -263,14 +266,14 @@ function floorElev(px, py){
   });
   return t === null ? .06 : t;
 }
-function buildFurn(f){
+function buildFurn(f, noCollide){
   const d = FURN[f.type]; if (!d) return;
   const g = new THREE.Group();
   d.draw(g, f.w, f.d, f.h, f.col || d.c);
   g.position.set(X(f.x), floorElev(f.x, f.y) + (d.z || 0), Z(f.y));
   g.rotation.y = -f.rot * Math.PI / 180;
   furnG.add(g);
-  if (f.h >= 0.1 && !(d.z && d.z >= 0.9)){
+  if (!noCollide && f.h >= 0.1 && !(d.z && d.z >= 0.9)){
     const th = f.rot * Math.PI / 180, c = Math.abs(Math.cos(th)), s = Math.abs(Math.sin(th));
     const hx = (f.w * c + f.d * s) / 2 / S, hy = (f.w * s + f.d * c) / 2 / S;
     collide(f.x - hx, f.x + hx, f.y - hy, f.y + hy);
@@ -290,6 +293,13 @@ function rebuild(){
   st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
   rebuildSys();
   syncVariants();
+}
+/* Mentre trascini un arredo ricostruisco solo gli arredi (i muri fusi e i pavimenti restano come sono).
+   Gli ostacoli per la passeggiata si aggiornano col rebuild completo, al rilascio. */
+function rebuildFurn(){
+  clearGroup(furnG);
+  st.plan.furniture.forEach(f => buildFurn(f, true));
+  st.shadowDirty = true;
 }
 /* Costruisce la seconda versione nei gruppi del confronto, riusando le stesse funzioni */
 function buildCmp(){
@@ -322,4 +332,4 @@ const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true
 plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
 mergeStatic(staticG);
 
-export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, road };
+export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, rebuildFurn, road };

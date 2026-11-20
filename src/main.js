@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { $, st } from './core.js';
 import { CMPG, MAING, camera, canvas, cmpVertical, editG, renderer, resize, scene, stage } from './scene.js';
 import { normalize } from './model.js';
-import { rebuild } from './build.js';
+import { rebuild, rebuildFurn } from './build.js';
 import { controls, initTheme, preset, setMode } from './views.js';
 import { walk, walkPointerDown, walkPointerMove, walkPointerUp } from './walk.js';
 import { buildDock, editorDown, editorMove, editorUp, histBtns } from './editor.js';
@@ -67,7 +67,7 @@ function frame(time){
     if (st.tween.t >= 1) st.tween = null;
   }
   if (st.mode === 'walk') walk(dt); else controls.update();
-  if (st.needRebuild){ rebuild(); st.needRebuild = false; }
+  if (st.needRebuild){ if (st.needRebuild === 'furn') rebuildFurn(); else rebuild(); st.needRebuild = false; }
   if (st.overlayDirty){ drawOverlay(); st.overlayDirty = false; }
   updSysSprites();
   if (st.editing){

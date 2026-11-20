@@ -6,7 +6,7 @@ import { FURN } from './furniture.js';
 import { isH } from './model.js';
 import { labelWpx } from './build.js';
 import { setHint } from './views.js';
-import { deleteSel, duplicateSel, mutate, selItem, setSel, splitRail } from './editor.js';
+import { clearTxt, clearances, deleteSel, duplicateSel, fmtLen, furnHalf, mutate, obstacleFaces, rightAngle, selItem, setSel, splitRail, wallGaps } from './editor.js';
 import { RUNK, SYS, buildRunCatalog, buildSysCatalog, runKind, setCatLayer, sysProps, sysType } from './impianti.js';
 
 /* ---------- scheda delle proprietà ---------- */
@@ -145,6 +145,8 @@ function refreshProps(){
     title.textContent = w.k === 'e' ? 'Muro esterno' : 'Muro interno';
     add(fld('Tipo', selIn([['e','Muro esterno'],['i','Muro interno']], w.k, v => mutate(() => { w.k = v; }))));
     add(fld('Lunghezza (m)', numIn(len, .05, .2, v => mutate(() => { const L = Math.max(4, v/S); if (h) w.x2 = w.x1 + L; else w.y2 = w.y1 + L; }))));
+    const gp = clearTxt(wallGaps(w), h ? ['n','s'] : ['w','e']);
+    if (gp) add(note('Spazio libero fino ai muri paralleli: ' + gp + '. Trascina il muro per spostarlo: i muri collegati si allungano con lui.'));
     wallFinishSides(w, isH(w));
     acts.append(btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
   } else if (it.type === 'op'){
@@ -155,6 +157,21 @@ function refreshProps(){
       const a = h ? w.x1 : w.y1, b = h ? w.x2 : w.y2, nw = clamp(v/S, 6, b - a);
       o.w = nw; o.p = clamp(o.p, a + nw/2, b - nw/2);
     }))));
+    if (o.t === 'win' || o.t === 'pf'){
+      const n = Math.round(o.n || 2), wm = o.w * S;
+      add(section('Ante (finestre nello stesso vano)'));
+      const ni = numIn(n, 1, 1, v => mutate(() => { o.n = clamp(Math.round(v), 1, 24); })); ni.value = String(n); ni.inputMode = 'numeric';
+      add(fld('Numero di ante', ni));
+      const seg = el('div','segs');
+      [[1,'1'],[2,'2'],[3,'3'],[4,'4'],[0,'2 al metro']].forEach(q => {
+        const target = q[0] || clamp(Math.round(wm * 2), 1, 24);
+        const b = el('button', null, q[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(q[0] ? n === q[0] : false));
+        b.addEventListener('click', () => mutate(() => { o.n = target; }));
+        seg.appendChild(b);
+      });
+      add(seg);
+      add(note('Ogni anta è larga ' + fmtLen(o.w / n) + '.'));
+    }
     if (o.t === 'door'){
       add(section('Colore della porta'));
       add(colorRow(o.col, v => mutate(() => { o.col = v || undefined; }), true));
@@ -181,7 +198,20 @@ function refreshProps(){
     add(fld('Tipo', selIn([['rail','Parapetto pieno'],['glazed','Vetrata'],['fence','Ringhiera']], r.kind, v => mutate(() => { r.kind = v; }))));
     if (r.kind !== 'glazed') add(fld('Altezza (m)', numIn(r.h || 1, .05, .3, v => mutate(() => { r.h = clamp(v, .3, 2); }))));
     if (r.kind === 'fence') add(fld('Muretto alla base (m)', numIn(r.base || 0, .05, 0, v => mutate(() => { r.base = clamp(v, 0, 1.2); }))));
-    if (r.kind === 'glazed') add(note('Colore e texture riguardano il muretto sotto la vetrata. Il lato interno della veranda è quello verso sud o est.'));
+    if (r.kind === 'glazed'){
+      const pw = r.pw || 1.6;
+      let len = 0; for (let i=0; i<r.pts.length-1; i++) len += Math.hypot(r.pts[i+1][0]-r.pts[i][0], r.pts[i+1][1]-r.pts[i][1]);
+      add(section('Finestre nella vetrata'));
+      add(fld('Larghezza di ogni vetro (m)', numIn(pw, .05, .2, v => mutate(() => { r.pw = clamp(v, .2, 4); }))));
+      const seg = el('div','segs');
+      [[1.6,'Grandi'],[1,'1 al metro'],[.5,'2 al metro'],[.33,'3 al metro']].forEach(q => {
+        const b = el('button', null, q[1]); b.type = 'button'; b.setAttribute('aria-pressed', String(Math.abs(pw - q[0]) < .01));
+        b.addEventListener('click', () => mutate(() => { r.pw = q[0]; }));
+        seg.appendChild(b);
+      });
+      add(seg);
+      add(note('Circa ' + Math.max(1, Math.round(len * S / pw)) + ' finestre su ' + fmtLen(len) + '. Colore e texture qui sotto riguardano il muretto sotto la vetrata; il lato interno della veranda è quello verso sud o est.'));
+    }
     if (r.kind === 'fence'){
       add(section('Colore della ringhiera'));
       add(colorRow(r.col, v => mutate(() => { r.col = v || undefined; }), true));
@@ -198,6 +228,10 @@ function refreshProps(){
     add(fld('Profondità (m)', numIn(f.d, .05, .1, v => mutate(() => { f.d = clamp(v, .1, 8); }))));
     add(fld('Altezza (m)', numIn(f.h, .05, .01, v => mutate(() => { f.h = clamp(v, .01, 4); }))));
     add(fld('Rotazione (°)', numIn(f.rot, 5, 0, v => mutate(() => { f.rot = ((v % 360) + 360) % 360; }))));
+    if (rightAngle(f.rot)){
+      const hh = furnHalf(f, f.rot), cl = clearTxt(clearances(f.x - hh[0], f.x + hh[0], f.y - hh[1], f.y + hh[1], obstacleFaces()));
+      if (cl) add(note('Distanza dai muri: ' + cl + '. Avvicinalo a un muro e si appoggia da solo; tieni premuto Alt per muoverlo libero.'));
+    }
     add(section('Colore'));
     add(colorRow(f.col, v => mutate(() => { f.col = v || undefined; }), true));
     acts.append(btn('Ruota di 90°', () => mutate(() => { f.rot = (f.rot + 90) % 360; })), btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
