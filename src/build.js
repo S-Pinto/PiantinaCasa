@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { H, HEAD, S, SILL, WELL, X, Z, clamp, pointInPoly, st } from './core.js';
 import { CMPG, MAING, labelsG, staticG } from './scene.js';
 import { TEXDEF, toTex } from './textures.js';
-import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMat, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop } from './materials.js';
+import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMatFor, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop } from './materials.js';
 import { FURN } from './furniture.js';
 import { isH, variantPlan, wallT } from './model.js';
 import { syncVariants } from './variants.js';
@@ -108,7 +108,7 @@ function buildWall(w, wi){
   const lintel = (lo,hi,h0,h1) => part(lo,hi,h0,h1,t,wm,'nocol');
 
   /* telaio con n ante: un montante fra un’anta e l’altra */
-  const frame = (lo,hi,h0,h1,n) => {
+  const frame = (lo,hi,h0,h1,n,frameMat) => {
     const ft = 3, fw = 1.6;
     part(lo,lo+fw,h0,h1,ft,frameMat,false);
     part(hi-fw,hi,h0,h1,ft,frameMat,false);
@@ -134,8 +134,8 @@ function buildWall(w, wi){
   iv.forEach(o => {
     solidPiece(cur, o.lo, 0, H);
     cur = o.hi;
-    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD, paneCount(o)); }
-    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD, paneCount(o)); }
+    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD, paneCount(o), frameMatFor(o.fc)); }
+    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD, paneCount(o), frameMatFor(o.fc)); }
     else if (o.t === 'door'){ lintel(o.lo, o.hi, HEAD, H); leaf(o); }
     else if (o.t === 'lift'){
       /* porta dell'ascensore: due ante d'acciaio scorrevoli, chiuse, con cornice e pulsantiera */
@@ -161,6 +161,57 @@ function buildColumn(c){
   collide(c.x0,c.x1,c.y0,c.y1);
 }
 
+/* Incroci fra parapetti e vetrate: dove due tratti si toccano ad angolo, quello orizzontale arriva
+   fino alla faccia esterna dell’altro e quello verticale si ferma sulla sua faccia interna.
+   Così l’angolo è pieno, senza fessure né facce sovrapposte. */
+const railThick = r => r.kind === 'glazed' ? 5 : r.kind === 'fence' ? 6 : 8;
+function railJoinAt(r, p){
+  for (const o of st.plan.rails){
+    if (o === r || o.pts.length < 2 || o.kind === 'fence') continue;
+    const ends = [[o.pts[0], o.pts[1]], [o.pts[o.pts.length - 1], o.pts[o.pts.length - 2]]];
+    for (const [q, q2] of ends){
+      if (Math.hypot(q[0] - p[0], q[1] - p[1]) > 10) continue;
+      const oh = Math.abs(q2[1] - q[1]) <= Math.abs(q2[0] - q[0]);
+      return { horiz:oh, th:railThick(o), q };
+    }
+  }
+  return null;
+}
+function railSpan(r, i, horiz){
+  const a = r.pts[i], b = r.pts[i + 1], ax = horiz ? 0 : 1, half = railThick(r) / 2;
+  const mn = Math.min(a[ax], b[ax]), mx = Math.max(a[ax], b[ax]);
+  let lo = mn - half, hi = mx + half;
+  const ends = [];
+  if (i === 0) ends.push(a);
+  if (i === r.pts.length - 2) ends.push(b);
+  ends.forEach(p => {
+    const j = railJoinAt(r, p);
+    if (!j || j.horiz === horiz) return;
+    const line = j.q[ax], atLo = p[ax] === mn;
+    if (horiz){ if (atLo) lo = line - j.th / 2; else hi = line + j.th / 2; }
+    else      { if (atLo) lo = line + j.th / 2; else hi = line - j.th / 2; }
+  });
+  return [lo, hi];
+}
+/* Muri uguali (stesso tipo, colori e rivestimenti) che stanno sulla stessa linea e si toccano
+   diventano un muro solo: niente giunte visibili né facce che sfarfallano */
+function mergedWalls(ws){
+  const key = w => [w.k, w.col || '', w.tx || '', JSON.stringify(w.sa || null), JSON.stringify(w.sb || null), isH(w) ? 'h' : 'v', isH(w) ? w.y1 : w.x1].join('|');
+  const groups = new Map(), out = [];
+  ws.forEach(w => { const k = key(w); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(w); });
+  groups.forEach(g => {
+    const h = isH(g[0]), s = w => h ? w.x1 : w.y1, e = w => h ? w.x2 : w.y2;
+    g.sort((p, q) => s(p) - s(q));
+    let cur = null;
+    g.forEach(w => {
+      if (cur && s(w) <= e(cur) + 0.5){
+        if (h) cur.x2 = Math.max(cur.x2, w.x2); else cur.y2 = Math.max(cur.y2, w.y2);
+        cur.ops = cur.ops.concat(w.ops || []);
+      } else { cur = Object.assign({}, w, { ops:(w.ops || []).slice() }); out.push(cur); }
+    });
+  });
+  return out;
+}
 function buildRail(r){
   const t = 8;
   for (let i=0; i<r.pts.length-1; i++){
@@ -168,15 +219,16 @@ function buildRail(r){
     const horiz = Math.abs(b[1]-a[1]) <= Math.abs(b[0]-a[0]);
     /* lato a = nord/ovest, lato b = sud/est */
     const ra = r.sa || { col:r.col, tx:r.tx }, rb = r.sb || { col:r.col, tx:r.tx };
-    const rE = finishMatD(r.col, r.tx, parSide), rA = finishMatD(ra.col, ra.tx, parSide), rB = finishMatD(rb.col, rb.tx, parSide);
+    const rA = finishMatD(ra.col, ra.tx, parSide), rB = finishMatD(rb.col, rb.tx, parSide);
+    /* le testate seguono il lato esterno (lato a) quando ha una finitura sua: negli angoli non spunta il rivestimento interno */
+    const eTx = r.sa ? ra.tx : r.tx, rE = r.sa ? rA : finishMatD(r.col, r.tx, parSide);
     const rM  = horiz ? [rE,rE,parTop,rE,rB,rA] : [rB,rA,parTop,rE,rE,rE];
-    const rUV = horiz ? [tileOf(r.tx),tileOf(r.tx),0,0,tileOf(rb.tx),tileOf(ra.tx)] : [tileOf(rb.tx),tileOf(ra.tx),0,0,tileOf(r.tx),tileOf(r.tx)];
+    const rUV = horiz ? [tileOf(eTx),tileOf(eTx),0,0,tileOf(rb.tx),tileOf(ra.tx)] : [tileOf(rb.tx),tileOf(ra.tx),0,0,tileOf(eTx),tileOf(eTx)];
     if (r.kind === 'fence'){
       buildFence(r, a, b, horiz);
     } else if (r.kind === 'glazed'){
       const sill = 0.9, pitchPx = clamp(r.pw || 1.6, .2, 4) / S;      /* r.pw = larghezza di ogni vetro in metri */
-      const lo = (horiz ? Math.min(a[0],b[0]) : Math.min(a[1],b[1])) - t/2;
-      const hi = (horiz ? Math.max(a[0],b[0]) : Math.max(a[1],b[1])) + t/2;
+      const [lo, hi] = railSpan(r, i, horiz), frameMat = frameMatFor(r.fc);
       const c = horiz ? a[1] : a[0];
       const put = (p,q,h0,h1,th,m,cast,recv,uv) => horiz
         ? box(p,q,c-th/2,c+th/2,h0,h1,m,wallsG,cast,recv,uv) : box(c-th/2,c+th/2,p,q,h0,h1,m,wallsG,cast,recv,uv);
@@ -188,11 +240,12 @@ function buildRail(r){
       const n = Math.max(1, Math.round((hi-lo)/pitchPx));
       for (let k=0; k<=n; k++){ const q = lo + k*(hi-lo)/n; put(q-0.8,q+0.8,sill,H,3,frameMat,false,true); }
     } else {
+      const [lo, hi] = railSpan(r, i, horiz);
       if (horiz){
-        const lo = Math.min(a[0],b[0]) - t/2, hi = Math.max(a[0],b[0]) + t/2, c = a[1];
+        const c = a[1];
         box(lo,hi,c-t/2,c+t/2,0,clamp(r.h || 1, .3, 2),rM,floorsG,true,true,rUV); collide(lo,hi,c-t/2,c+t/2);
       } else {
-        const lo = Math.min(a[1],b[1]) - t/2, hi = Math.max(a[1],b[1]) + t/2, c = a[0];
+        const c = a[0];
         box(c-t/2,c+t/2,lo,hi,0,clamp(r.h || 1, .3, 2),rM,floorsG,true,true,rUV); collide(c-t/2,c+t/2,lo,hi);
       }
     }
@@ -297,7 +350,7 @@ function rebuild(){
   clearGroup(floorsG); clearGroup(wallsG); clearGroup(labelsG, true); clearGroup(furnG);
   colliders.length = 0; staticColliders.forEach(c => colliders.push(c));
   st.plan.floors.forEach(buildFloor);
-  st.plan.walls.forEach(buildWall);
+  mergedWalls(st.plan.walls).forEach(buildWall);
   st.plan.columns.forEach(buildColumn);
   st.plan.rails.forEach(buildRail);
   st.plan.labels.forEach(buildLabel);
@@ -322,7 +375,7 @@ function buildCmp(){
   try {
     st.plan = variantPlan(st.cmpId);
     floorsG = CMPG.f; wallsG = CMPG.w; furnG = CMPG.u;
-    st.plan.floors.forEach(buildFloor); st.plan.walls.forEach(buildWall); st.plan.columns.forEach(buildColumn);
+    st.plan.floors.forEach(buildFloor); mergedWalls(st.plan.walls).forEach(buildWall); st.plan.columns.forEach(buildColumn);
     st.plan.rails.forEach(buildRail); st.plan.furniture.forEach(buildFurn);
     mergeStatic(CMPG.f); mergeStatic(CMPG.w);
   } finally {

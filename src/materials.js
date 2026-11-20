@@ -9,6 +9,9 @@ const wallMats = [wallSide, wallSide, wallTop, wallSide, wallSide, wallSide];
 const parSide = mat('#e4e1da'), parTop = mat('#cbc7be');
 const parMats = [parSide, parSide, parTop, parSide, parSide, parSide];
 const frameMat = mat('#39414a', {roughness:.5, metalness:.3});
+/* colore degli infissi scelto per finestra o vetrata (se non c’è, il grigio antracite di sempre) */
+const frameCols = {};
+const frameMatFor = c => c ? (frameCols[c] || (frameCols[c] = mat(c, { roughness:.5, metalness:.2 }))) : frameMat;
 const glassMat = new THREE.MeshStandardMaterial({ color:0x9ec3d6, transparent:true, opacity:.28, roughness:.1, metalness:.1, depthWrite:false });
 const doorMat = mat('#b99d7b', {roughness:.7});
 const doorCols = {};
@@ -56,4 +59,4 @@ function wallMatsFor(col, tx){
   return (wmCache[key] = [side, side, wallTop, side, side, side]);
 }
 
-export { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMat, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop };
+export { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMatFor, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop };

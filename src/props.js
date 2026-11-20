@@ -34,6 +34,16 @@ function thumb(id){
   else { g.fillStyle = flat || '#cccccc'; g.fillRect(0, 0, 72, 72); }
   return (thumbCache[id] = cv.toDataURL('image/png'));
 }
+/* Colore degli infissi (telai di finestre, porte-finestre e vetrate), con la scorciatoia per darlo a tutti */
+function setAllFrames(c){
+  st.plan.walls.forEach(w => (w.ops || []).forEach(o => { if (o.t === 'win' || o.t === 'pf') o.fc = c; }));
+  st.plan.rails.forEach(r => { if (r.kind === 'glazed') r.fc = c; });
+}
+function frameColorUi(obj){
+  propsEl.appendChild(section('Colore degli infissi'));
+  propsEl.appendChild(colorRow(obj.fc, v => mutate(() => { obj.fc = v || undefined; }), true));
+  propsEl.appendChild(btn('Usa questo colore per tutti gli infissi', () => mutate(() => setAllFrames(obj.fc))));
+}
 function colorRow(cur, onPick, allowNone){
   const row = el('div','sws'), lc = cur ? cur.toLowerCase() : null;
   if (allowNone){
@@ -171,6 +181,7 @@ function refreshProps(){
       });
       add(seg);
       add(note('Ogni anta è larga ' + fmtLen(o.w / n) + '.'));
+      frameColorUi(o);
     }
     if (o.t === 'door'){
       add(section('Colore della porta'));
@@ -211,6 +222,7 @@ function refreshProps(){
       });
       add(seg);
       add(note('Circa ' + Math.max(1, Math.round(len * S / pw)) + ' finestre su ' + fmtLen(len) + '. Colore e texture qui sotto riguardano il muretto sotto la vetrata; il lato interno della veranda è quello verso sud o est.'));
+      frameColorUi(r);
     }
     if (r.kind === 'fence'){
       add(section('Colore della ringhiera'));
