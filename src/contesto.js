@@ -157,8 +157,16 @@ function buildContext(){
   /* la stecca: 7 piani sotto l’attico, balconi continui su Via Verona */
   block(xW, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true });
   block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false });
-  /* ala sul retro, perpendicolare (si vede dietro all’attico nelle foto) */
-  block(-16, -2, north - 34, north, GROUND_Y, -0.42, { south:false, boxes:[[-9, north - 26, 5, 4]] });
+  /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
+     arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
+  const coreX = (X(297) + X(396)) / 2;
+  const wx0 = coreX - 7, wx1 = coreX + 7, wz0 = north - 30;
+  block(wx0, wx1, wz0, north, GROUND_Y, -0.04, { south:false, roof:false });
+  roof(wx0, wx1, wz0, north, -0.04, false);
+  plainBox(wx0, wx1, wz0, wz0 + 0.25, -0.04, 0.9, whiteMat);
+  plainBox(wx0, wx0 + 0.25, wz0, north, -0.04, 0.9, whiteMat);
+  plainBox(wx1 - 0.25, wx1, wz0, north, -0.04, 0.9, whiteMat);
+  roofBox(coreX + 2, north - 24, 5, 4, -0.04);
   /* corpi scala che sporgono sulla facciata dei balconi */
   [xW + 12, -32, 30, xE - 12].forEach(cx => {
     const t = facadeMat(texWin, 4, -0.42 - GROUND_Y);
@@ -172,13 +180,11 @@ function buildContext(){
   const core = new THREE.Mesh(new THREE.BoxGeometry(X(396) - X(297), 0.4, north - Z(38)), slab.material);
   core.position.set((X(297) + X(396)) / 2, -0.24, (Z(38) + north) / 2); core.receiveShadow = true;
   ctxG.add(core);
-  roof(xW, west - 0.05, north, south, -0.04, false);
-  roof(east + 0.05, xE, north, south, -0.04, false);
-  /* muretti d’attico sui bordi del tetto (non attraversano l’appartamento) */
-  [[xW, west], [east, xE]].forEach(r => {
-    plainBox(r[0], r[1], north, north + 0.25, -0.04, 0.9, whiteMat);
-    plainBox(r[0], r[1], south - 0.25, south, -0.04, 0.9, whiteMat);
-  });
+  /* quadrotti su tutta la copertura, anche sulla striscia dietro la casa */
+  roof(xW, xE, north, south, -0.04, false);
+  /* muretti d’attico sui bordi del tetto (non attraversano l’appartamento né il suo retro) */
+  [[xW, west], [east, xE]].forEach(r => plainBox(r[0], r[1], south - 0.25, south, -0.04, 0.9, whiteMat));
+  [[xW, X(135) - 0.05], [X(667) + 0.05, xE]].forEach(r => plainBox(r[0], r[1], north, north + 0.25, -0.04, 0.9, whiteMat));
   plainBox(xW, xW + 0.25, north, south, -0.04, 0.9, whiteMat);
   plainBox(xE - 0.25, xE, north, south, -0.04, 0.9, whiteMat);
   [[xW + 7, north + 3.2], [xW + 21, mid - 2], [east + 9, north + 3.2], [xE - 10, mid - 2]].forEach(b => roofBox(b[0], b[1], 5, 4.2, -0.04));
