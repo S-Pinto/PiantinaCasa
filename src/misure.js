@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { $, S, X, Z, isRectPts, pointInPoly, polyArea, st } from './core.js';
+import { $, H, S, X, Z, isRectPts, pointInPoly, polyArea, st } from './core.js';
 import { el } from './dom.js';
 import { MAING, camera, canvas, scene } from './scene.js';
 import { isH, wallT } from './model.js';
@@ -150,6 +150,7 @@ function fillPanel(rooms){
   });
   $('mcount').textContent = rooms.length;
   $('mtot').textContent = fmtA(tin);
+  $('mh').textContent = fmtM(H);
   $('mout').textContent = fmtA(tout);
 }
 function setMeasures(on){

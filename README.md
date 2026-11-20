@@ -53,7 +53,7 @@ three.js (r187) arriva dalla CDN jsDelivr tramite la *import map* in `index.html
 
 ### Luce e qualità
 
-Il pulsante **Luce** (a destra) sceglie giorno, tramonto o notte, oppure un’ora precisa con il cursore, e la stagione. Il sole segue il percorso vero per la latitudine di Brindisi con il nord in alto nella piantina; se la casa è orientata diversamente si corregge con **Orientamento del nord**. Di notte si accendono le luci delle stanze e le finestre del quartiere.
+Il pulsante **Luce** (a destra) sceglie giorno, tramonto o notte, oppure un’ora precisa con il cursore, e la stagione. Il sole segue il percorso vero per la latitudine di Brindisi. Il nord è a +25° rispetto all’alto della piantina, come indica la freccia della planimetria catastale (il balcone su Via Verona guarda a sud-sud-ovest); si può correggere con **Orientamento del nord**. Di notte si accendono le luci delle stanze e le finestre del quartiere.
 
 Colori e luci sono fisicamente corretti (gestione del colore attiva, tone mapping *Khronos PBR Neutral*, che non altera i colori di pavimenti e finiture). La **qualità grafica** ha tre livelli: *Alta* aggiunge occlusione ambientale (GTAO), bagliore delle luci e ombre delle lampade; *Media* (predefinita sul telefono) tiene le ombre del sole; *Leggera* abbassa la risoluzione. Le ombre si ricalcolano solo quando la scena cambia, quindi da ferma la piantina non consuma batteria per le ombre.
 

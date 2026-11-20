@@ -7,7 +7,7 @@
 /* Misure: tutto è espresso in pixel della piantina originale (x a destra, y in basso, nord in alto).
    1 px = 4 cm. */
 const S = 0.04, CX = 366, CY = 195;
-const H = 2.7, SILL = 0.9, HEAD = 2.1;
+const H = 3.0, SILL = 0.9, HEAD = 2.1;      /* altezza dei soffitti dalla planimetria catastale: 3,00 m */
 const X = px => (px - CX) * S;
 const Z = py => (py - CY) * S;
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));

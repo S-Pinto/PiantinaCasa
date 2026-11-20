@@ -33,7 +33,7 @@ controls.minDistance = 3; controls.maxDistance = 110;
 const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
 const hints = {
   orbit:'Trascina per ruotare, rotella o pizzico per zoomare.',
-  plan:'Vista dall’alto con il nord in alto. Rotella o pizzico per zoomare.',
+  plan:'Vista dall’alto, con Via Verona in basso. Rotella o pizzico per zoomare.',
   walk: coarse ? 'Joystick per muoverti, trascina per guardare. Tocca la mappa per spostarti.'
                : 'Clicca la scena per guardare col mouse (Esc per liberarlo), muoviti con W A S D, Maiusc per correre. Clicca la mappa per spostarti.',
   edit: coarse ? 'Tocca un elemento per modificarlo, oppure scegli uno strumento. Due dita per spostare e zoomare.'
