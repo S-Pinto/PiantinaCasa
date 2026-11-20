@@ -1,7 +1,7 @@
 import { $, st } from './core.js';
 import { normalize, planToJson } from './model.js';
 import { rebuild } from './build.js';
-import { pushUndo, validateSel } from './editor.js';
+import { flash, pushUndo, validateSel } from './editor.js';
 import { refreshProps } from './props.js';
 
 /* Salvataggi (dispositivo, account Claude), file condiviso, file HTML da inviare, import/export. */
@@ -10,7 +10,11 @@ import { refreshProps } from './props.js';
 /* chiave locale legata alla piantina pubblicata: se cambia data/plan.json i vecchi salvataggi non la coprono */
 const storageKey = () => 'piantina-via-verona-v2' + (st.planKey ? '-' + st.planKey : '');
 let dbDoc = null, saveTimer = null, userEdited = false;
-function statusMsg(t){ $('status').textContent = t; }
+function statusMsg(t){
+  $('status').textContent = t;
+  /* fuori dalla modifica la riga di stato è nascosta: il messaggio compare in basso per qualche secondo */
+  if ($('status').hidden && t) flash(t, 3500);
+}
 function updateFileNote(){
   const same = JSON.stringify(st.plan) === st.publishedJson;
   $('fileNote').textContent = st.artifactApi === false

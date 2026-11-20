@@ -251,8 +251,9 @@ function applyAmbLook(){
   /* luce diffusa */
   C1.set('#dce8f6'); C2.set('#ffd0a8');
   hemi.color.copy(C1).lerp(C2, low * 0.6).lerp(new THREE.Color('#3a4f7a'), 1 - day);
-  hemi.groundColor.set('#6f675c').lerp(new THREE.Color('#151a24'), 1 - day);
-  hemi.intensity = 0.1 + 0.26 * day + 0.25 * low * day;
+  /* dal basso arriva la luce rimbalzata da pavimenti e muri chiari: senza, le stanze in ombra diventano blu notte */
+  hemi.groundColor.set('#a8957c').lerp(new THREE.Color('#151a24'), 1 - day);
+  hemi.intensity = 0.1 + 0.62 * day + 0.2 * low * day;
   scene.environmentIntensity = 0.006 + 0.016 * day;     /* il cielo di Sky è in HDR: ne basta poco */
   renderer.toneMappingExposure = 0.9 + (1 - day) * 0.5 + low * 0.15 * day;
   ambState.night = 1 - day;
@@ -338,10 +339,5 @@ function initAmbiente(){
   applyQuality();
   syncAmbUi();
 }
-
-
-
-
-
 
 export { amb, ambFrame, ambState, initAmbiente, renderView };

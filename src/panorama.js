@@ -29,7 +29,7 @@ function setPano(on){
     controls.maxDistance = 150;
     controls.autoRotate = true; controls.autoRotateSpeed = -0.55;
     const p = panoShot();
-    st.tween = { t:0, dur:2.2, fp:camera.position.clone(), ft:controls.target.clone(), tp:p.pos, tt:p.tgt };
+    st.tween = { t:0, dur:2.2, fp:camera.position.clone(), ft:controls.target.clone(), tp:p.pos, tt:p.tgt, ff:camera.fov, tf:45 };
     canvas.focus();
   } else {
     st.pano = false;
@@ -74,10 +74,5 @@ function initPano(){
     document.body.appendChild(a); a.click(); a.remove();
   });
 }
-
-
-
-
-
 
 export { initPano };

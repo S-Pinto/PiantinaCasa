@@ -65,6 +65,7 @@ function frame(time){
     const k = ease(Math.min(1, st.tween.t));
     camera.position.lerpVectors(st.tween.fp, st.tween.tp, k);
     controls.target.lerpVectors(st.tween.ft, st.tween.tt, k);
+    if (st.tween.tf && st.tween.ff !== st.tween.tf){ camera.fov = st.tween.ff + (st.tween.tf - st.tween.ff) * k; camera.updateProjectionMatrix(); }
     if (st.tween.t >= 1) st.tween = null;
   }
   if (st.mode === 'walk') walk(dt); else controls.update();
@@ -155,8 +156,8 @@ function start(){
   resize();
   rebuild();
   setMode('orbit');
-  camera.position.copy(preset('orbit').pos);
-  controls.target.copy(preset('orbit').tgt);
+  const p0 = preset('orbit');
+  camera.position.copy(p0.pos); controls.target.copy(p0.tgt);
   st.tween = null; controls.update();
   histBtns();
   initAmbiente();
