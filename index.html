@@ -131,6 +131,37 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
 #dlg h2{ margin:0 0 6px; font-size:15px; }
 #dlg textarea{ width:100%; height:220px; resize:vertical; border:1px solid var(--line); border-radius:10px; background:transparent; padding:8px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; }
 #dlg .acts .btn{ flex:1; }
+
+/* ---------- impianti ---------- */
+.ib.on{ border-color:var(--accent); color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.ldot{ display:inline-block; width:11px; height:11px; margin-right:9px; border-radius:50%; vertical-align:-1px; }
+.menu .pt{ margin:6px 2px 2px; font-size:15px; font-weight:700; }
+.sysb{ flex-direction:column; gap:6px; height:auto !important; padding:10px 4px !important; line-height:1.15; font-size:11.5px; color:var(--ink) !important; }
+.sysb em{ font-style:normal; overflow-wrap:anywhere; }
+.gl.s{ min-width:24px; height:24px; padding:0 4px; margin-right:8px; border-width:1.5px; font-size:8.5px; vertical-align:middle; flex:none; }
+.lyt{ margin:12px 0 4px; }
+.lyt button{ display:flex; align-items:center; justify-content:center; gap:6px; }
+.lyt .ldot{ margin:0; width:9px; height:9px; }
+.tip{ position:absolute; z-index:6; max-width:260px; padding:7px 11px; border-radius:10px; font-size:12.5px; line-height:1.35; pointer-events:none; background:var(--panel); border:1px solid var(--line); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 4px 14px rgba(0,0,0,.12); }
+.tip b{ display:block; font-size:13px; }
+.tip span{ color:var(--muted); }
+#qty .vc{ display:flex; align-items:center; }
+.gl{ display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:30px; padding:0 5px; border-radius:15px; border:2px solid #fff; color:#fff; font-size:10.5px; font-weight:700; box-shadow:0 0 0 1px var(--line); }
+.rk{ display:flex; align-items:center; gap:10px; width:100%; min-height:42px; margin:0 0 6px; padding:6px 10px; border:2px solid var(--line); border-radius:11px; background:transparent; cursor:pointer; font-size:13.5px; font-weight:600; text-align:left; }
+.rk[aria-pressed="true"]{ border-color:var(--accent); outline:2px solid var(--accent); }
+.rk i{ flex:none; width:28px; height:6px; border-radius:3px; }
+#qty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); padding:16px; z-index:8; }
+#qty .box{ width:min(640px,100%); max-height:calc(100% - 24px); display:flex; flex-direction:column; border-radius:16px; padding:14px; }
+#qty h2{ margin:0 0 6px; font-size:15px; }
+#qty .qbody{ overflow:auto; min-height:0; }
+#qty h3{ display:flex; align-items:center; margin:16px 0 6px; font-size:13.5px; }
+#qty table{ width:100%; border-collapse:collapse; font-size:13px; table-layout:fixed; }
+#qty th:nth-child(1){ width:42%; } #qty th:nth-child(2){ width:20%; text-align:right; }
+#qty th{ text-align:left; font-size:11.5px; font-weight:700; color:var(--muted); padding:4px 6px; border-bottom:1px solid var(--line); }
+#qty td{ padding:6px; border-bottom:1px solid var(--line); vertical-align:top; }
+#qty td.n{ text-align:right; white-space:nowrap; font-weight:700; font-variant-numeric:tabular-nums; }
+#qty td.w{ color:var(--muted); font-size:12px; }
+#qty .acts .btn{ flex:1; }
 </style>
 </head>
 <body>
@@ -152,6 +183,8 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
       <svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
     <button type="button" class="ib edit-only" id="redo" aria-label="Ripeti" title="Ripeti" hidden="">
       <svg class="i" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg></button>
+    <button type="button" class="ib" id="btnSys" aria-pressed="false" aria-haspopup="true" aria-expanded="false" title="Livelli degli impianti">
+      <svg class="i" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"></path></svg><span class="lbl">Impianti</span></button>
     <button type="button" class="ib" id="btnEdit" aria-pressed="false" title="Modifica la casa">
       <svg class="i" viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"></path><path d="M14 7l3 3"></path></svg><span class="lbl" id="editLbl">Modifica</span></button>
     <button type="button" class="ib" id="btnMenu" aria-haspopup="true" aria-expanded="false" aria-label="Opzioni" title="Opzioni">
@@ -184,6 +217,15 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
     <input type="file" id="file" accept=".json,application/json" hidden="">
   </div>
 
+  <div class="menu glass" id="sysmenu" hidden="">
+    <p class="pt">Livelli degli impianti</p>
+    <label class="mrow"><span><i class="ldot" style="background:#e8a317"></i>Elettrico</span><input type="checkbox" id="ly-el"></label>
+    <label class="mrow"><span><i class="ldot" style="background:#2f86d6"></i>Idraulico</span><input type="checkbox" id="ly-h2o"></label>
+    <label class="mrow"><span><i class="ldot" style="background:#2fa36b"></i>Domotica</span><input type="checkbox" id="ly-dom"></label>
+    <button type="button" class="btn primary" id="btnQty" style="width:100%;margin-top:12px">Elenco quantità</button>
+    <p class="note">Per aggiungere prese, tubi o sensori premi Modifica e scegli Impianti o Tracciati.</p>
+  </div>
+
   <nav class="dock glass edit-only" id="dock" aria-label="Strumenti di modifica" hidden=""></nav>
 
   <aside class="sheet glass" id="sheet" data-collapsed="0" hidden="">
@@ -201,6 +243,7 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
     <div class="where" id="where" aria-live="polite"></div>
   </div>
   <p class="hint" id="hint"></p>
+  <div class="tip" id="tip" hidden=""></div>
 
   <div id="dlg" hidden="">
     <div class="box glass" role="dialog" aria-modal="true" aria-labelledby="dlgt">
@@ -211,6 +254,18 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
         <button type="button" class="btn" id="dlgcopy">Copia</button>
         <button type="button" class="btn" id="dlgapply">Applica</button>
         <button type="button" class="btn" id="dlgclose">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="qty" hidden="">
+    <div class="box glass" role="dialog" aria-modal="true" aria-labelledby="qtyt">
+      <h2 id="qtyt">Elenco quantità degli impianti</h2>
+      <div class="qbody" id="qtybody"></div>
+      <div class="acts">
+        <button type="button" class="btn" id="qtycopy">Copia testo</button>
+        <button type="button" class="btn" id="qtycsv">Scarica CSV</button>
+        <button type="button" class="btn" id="qtyclose">Chiudi</button>
       </div>
     </div>
   </div>
@@ -732,7 +787,7 @@ const okTex = t => (typeof t === 'string' && TEXDEF[t]) ? t : undefined;
 const normSide = o => (o && typeof o === 'object') ? { col:okCol(o.col), tx:okTex(o.tx), h:(typeof o.h === 'number' && isFinite(o.h) && o.h > 0) ? clamp(o.h, .1, 4) : undefined, tcol:okCol(o.tcol) } : undefined;
 function normalize(p){
   const num = v => (typeof v === 'number' && isFinite(v));
-  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[] };
+  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[], sys:[], runs:[] };
   (p.walls || []).forEach(w => {
     if (![w.x1,w.y1,w.x2,w.y2].every(num)) return;
     let x1 = w.x1, y1 = w.y1, x2 = w.x2, y2 = w.y2;
@@ -764,6 +819,16 @@ function normalize(p){
     const d = FURN[f.type];
     out.furniture.push({ id:f.id || uid(), type:f.type, x:f.x, y:f.y, rot:num(f.rot) ? ((f.rot % 360) + 360) % 360 : 0,
       w:clamp(num(f.w) ? f.w : d.w, .1, 8), d:clamp(num(f.d) ? f.d : d.d, .1, 8), h:clamp(num(f.h) ? f.h : d.h, .01, 4), col:okCol(f.col) });
+  });
+  const note = v => (typeof v === 'string' && v.trim()) ? v.trim().slice(0, 80) : undefined;
+  (p.sys || []).forEach(o => {
+    if (!o || !SYS[o.t] || !num(o.x) || !num(o.y)) return;
+    out.sys.push({ id:o.id || uid(), t:o.t, x:o.x, y:o.y, z:clamp(num(o.z) ? o.z : SYS[o.t].z, 0, 4),
+      rot:num(o.rot) ? ((o.rot % 360) + 360) % 360 : 0, circ:note(o.circ) });
+  });
+  (p.runs || []).forEach(r => {
+    if (!r || !RUNK[r.k] || !Array.isArray(r.pts) || r.pts.length < 2 || !r.pts.every(q => Array.isArray(q) && num(q[0]) && num(q[1]))) return;
+    out.runs.push({ id:r.id || uid(), k:r.k, h:clamp(num(r.h) ? r.h : RUNK[r.k].h, 0, 4), circ:note(r.circ), pts:r.pts.map(q => [q[0],q[1]]) });
   });
   return out;
 }
@@ -869,6 +934,62 @@ const FURN = {
   vasca:    { n:'Vasca', cat:'Bagno', w:1.7, d:.7, h:.55, c:'#f4f4f2', draw:(g,W,D,H,C) => {
     fbox(g,W,H,D,0,0,0,C); fbox(g,W-.14,.02,D-.14,0,H-.02,0,'#dfe6ea'); } }
 };
+/* ------------------------- Impianti: elettrico, idraulico, domotica ------------------------- */
+/* Ogni punto d’impianto ha un tipo (SYS), una posizione in pixel della piantina, un’altezza da terra (z, in metri),
+   una rotazione (il fronte guarda verso +z locale, come gli arredi) e una nota libera (circ: circuito, linea…).
+   m = montaggio: w parete, c soffitto, f pavimento. g = sigla mostrata nel simbolo. s = misure [l, h, p] in metri.
+   I tracciati (runs) sono tratti di cavo o di tubo, con tipo (RUNK) e altezza da terra. */
+const LAYERS = {
+  el:  { n:'Elettrico', c:'#e8a317' },
+  h2o: { n:'Idraulico', c:'#2f86d6' },
+  dom: { n:'Domotica',  c:'#2fa36b' }
+};
+const SYS = {
+  presa:      { n:'Presa 10/16 A', l:'el', g:'P', m:'w', z:.3 },
+  schuko:     { n:'Presa Schuko', l:'el', g:'SK', m:'w', z:.3 },
+  presa_usb:  { n:'Presa con USB', l:'el', g:'USB', m:'w', z:.3 },
+  presa_ded:  { n:'Presa dedicata (forno, piano)', l:'el', g:'E', m:'w', z:.6 },
+  presa_tv:   { n:'Presa TV / SAT', l:'el', g:'TV', m:'w', z:.3 },
+  presa_lan:  { n:'Presa di rete (LAN)', l:'el', g:'LAN', m:'w', z:.3 },
+  interr:     { n:'Interruttore', l:'el', g:'I', m:'w', z:1.1 },
+  deviatore:  { n:'Deviatore', l:'el', g:'D', m:'w', z:1.1 },
+  invert:     { n:'Invertitore', l:'el', g:'INV', m:'w', z:1.1 },
+  pulsante:   { n:'Pulsante', l:'el', g:'PU', m:'w', z:1.1 },
+  luce_soff:  { n:'Punto luce a soffitto', l:'el', g:'L', m:'c', z:H, s:[.14,.03,.14] },
+  luce_par:   { n:'Punto luce a parete', l:'el', g:'LP', m:'w', z:2, s:[.14,.1,.06] },
+  quadro:     { n:'Quadro elettrico', l:'el', g:'Q', m:'w', z:1.5, s:[.4,.5,.1] },
+  citofono:   { n:'Citofono / videocitofono', l:'el', g:'VC', m:'w', z:1.5, s:[.14,.2,.04] },
+  af:         { n:'Attacco acqua fredda', l:'h2o', g:'AF', m:'w', z:.55, c:'#2f86d6', b:'#c9ced3', s:[.05,.05,.06] },
+  ac:         { n:'Attacco acqua calda', l:'h2o', g:'AC', m:'w', z:.55, c:'#d64a2f', b:'#c9ced3', s:[.05,.05,.06] },
+  scarico:    { n:'Scarico a parete', l:'h2o', g:'S', m:'w', z:.4, c:'#7b6a58', b:'#8f8a84', s:[.08,.08,.06] },
+  piletta:    { n:'Piletta a pavimento', l:'h2o', g:'PI', m:'f', z:0, c:'#7b6a58', b:'#aeb4b9', s:[.12,.01,.12] },
+  collettore: { n:'Collettore', l:'h2o', g:'CO', m:'w', z:.5, s:[.6,.35,.1], b:'#d9dcdf' },
+  caldaia:    { n:'Caldaia / scaldabagno', l:'h2o', g:'CA', m:'w', z:1.4, s:[.45,.7,.3] },
+  radiatore:  { n:'Radiatore', l:'h2o', g:'R', m:'w', z:.45, s:[.8,.6,.08] },
+  rubinetto:  { n:'Rubinetto esterno', l:'h2o', g:'RB', m:'w', z:.6, b:'#c9ced3', s:[.05,.05,.1] },
+  hub:        { n:'Hub / gateway domotico', l:'dom', g:'HUB', m:'w', z:1.2, s:[.15,.15,.04] },
+  ap:         { n:'Access point Wi-Fi', l:'dom', g:'AP', m:'c', z:H, s:[.18,.04,.18] },
+  cam:        { n:'Telecamera', l:'dom', g:'CAM', m:'w', z:2.4, s:[.09,.09,.16], b:'#2b3036' },
+  pir:        { n:'Sensore di movimento', l:'dom', g:'MOV', m:'w', z:2.2 },
+  contatto:   { n:'Sensore porta / finestra', l:'dom', g:'APR', m:'w', z:2 },
+  fumo:       { n:'Rilevatore di fumo', l:'dom', g:'FUM', m:'c', z:H, s:[.11,.04,.11] },
+  gas:        { n:'Rilevatore di gas', l:'dom', g:'GAS', m:'w', z:2.4 },
+  allag:      { n:'Sensore di allagamento', l:'dom', g:'H₂O', m:'f', z:0, s:[.07,.02,.07] },
+  clima:      { n:'Termostato / sensore clima', l:'dom', g:'T°', m:'w', z:1.5 },
+  tapparella: { n:'Attuatore tapparella', l:'dom', g:'TAP', m:'w', z:1.1 },
+  rele:       { n:'Attuatore luce / relè', l:'dom', g:'REL', m:'w', z:1.1 },
+  valvola:    { n:'Elettrovalvola acqua', l:'dom', g:'EV', m:'w', z:.5 },
+  sirena:     { n:'Sirena', l:'dom', g:'SIR', m:'w', z:2.4, s:[.18,.22,.07] },
+  energia:    { n:'Misuratore consumi', l:'dom', g:'kWh', m:'w', z:1.5 }
+};
+const RUNK = {
+  el:   { n:'Linea elettrica', l:'el', c:'#e8a317', r:.012, h:.3 },
+  dati: { n:'Cavo dati / bus', l:'dom', c:'#2fa36b', r:.01, h:.25 },
+  af:   { n:'Tubo acqua fredda', l:'h2o', c:'#2f86d6', r:.016, h:.12 },
+  ac:   { n:'Tubo acqua calda', l:'h2o', c:'#d64a2f', r:.016, h:.17 },
+  sc:   { n:'Tubo di scarico', l:'h2o', c:'#7b6a58', r:.035, h:.07 }
+};
+const SYS_MOUNT = { w:'a parete', c:'a soffitto', f:'a pavimento' };
 let plan = defaultPlan();
 /* Piantina salvata nel file (se c’è): è quella che vede chiunque apra il link */
 let publishedTs = 0, viewOnlyFile = false;
@@ -1110,6 +1231,88 @@ function rebuild(){
   plan.rails.forEach(buildRail);
   plan.labels.forEach(buildLabel);
   plan.furniture.forEach(buildFurn);
+  Object.keys(sysL).forEach(k => clearGroup(sysL[k])); sysSprites.length = 0;
+  plan.sys.forEach(buildSys);
+  plan.runs.forEach(buildRun);
+}
+
+/* ---------- impianti in 3D: un gruppo per livello, accesi e spenti dall’utente ---------- */
+const sysG = new THREE.Group(); scene.add(sysG);
+const sysL = {};
+Object.keys(LAYERS).forEach(k => { sysL[k] = new THREE.Group(); sysL[k].visible = false; sysG.add(sysL[k]); });
+const sysColor = t => SYS[t].c || LAYERS[SYS[t].l].c;
+const glyphCache = {}, sprCache = {}, runMatCache = {};
+function glyphTex(text, col){
+  const k = text + col; if (glyphCache[k]) return glyphCache[k];
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+  const g = cv.getContext('2d');
+  g.beginPath(); g.arc(64, 64, 55, 0, Math.PI*2); g.fillStyle = col; g.fill();
+  g.lineWidth = 9; g.strokeStyle = '#ffffff'; g.stroke();
+  g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = '700 ' + (text.length >= 3 ? 37 : text.length === 2 ? 50 : 64) + 'px Figtree, system-ui, sans-serif';
+  g.fillText(text, 64, 68);
+  const t = new THREE.CanvasTexture(cv); t.anisotropy = 4;
+  return glyphCache[k] = t;
+}
+function sysSprite(t){
+  const m = sprCache[t] || (sprCache[t] = new THREE.SpriteMaterial({ map:glyphTex(SYS[t].g, sysColor(t)), depthTest:false, depthWrite:false, transparent:true, sizeAttenuation:false }));
+  m.depthTest = sysWalkDepth;
+  const sp = new THREE.Sprite(m); sp.scale.set(sprK, sprK, 1); sp.renderOrder = 12; sysSprites.push(sp); return sp;
+}
+/* I simboli restano della stessa misura sullo schermo (circa 26 px), a qualsiasi zoom */
+const sysSprites = []; let sprK = .03;
+let sysWalkDepth = false;
+function updSysSprites(){
+  sprK = 26 / Math.max(1, canvas.clientHeight) * 2 * Math.tan(camera.fov * Math.PI / 360);
+  const sid = (editing && sel && sel.type === 'sys') ? sel.id : null;
+  sysSprites.forEach(sp => { const on = sp.userData.id === sid, k = on ? sprK * 1.45 : sprK; sp.scale.set(k, k, 1); sp.renderOrder = on ? 25 : 12; });
+  /* In passeggiata i simboli e i tubi restano dietro ai muri, nelle altre viste si vedono attraverso */
+  const wd = mode === 'walk';
+  if (wd !== sysWalkDepth){
+    sysWalkDepth = wd;
+    Object.keys(sprCache).forEach(k => { sprCache[k].depthTest = wd; });
+    Object.keys(runMatCache).forEach(k => { runMatCache[k].depthTest = wd; });
+  }
+}
+function runMat(c){ const m = runMatCache[c] || (runMatCache[c] = new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.92, depthTest:false, depthWrite:false })); m.depthTest = sysWalkDepth; return m; }
+function buildSys(o){
+  const d = SYS[o.t]; if (!d) return;
+  const g = new THREE.Group(), col = sysColor(o.t), body = d.b || '#f4f4f2';
+  const sz = d.s || (d.m === 'w' ? [.085,.085,.025] : [.12,.02,.12]);
+  if (d.m === 'w'){
+    fbox(g, sz[0], sz[1], sz[2], 0, -sz[1]/2, sz[2]/2, body);
+    fbox(g, sz[0]*.5, sz[1]*.5, .008, 0, -sz[1]*.25, sz[2] + .004, col);
+  } else {
+    const ceil = d.m === 'c', r = sz[0]/2, h = sz[1];
+    fcyl(g, r, h, 0, ceil ? -h : 0, 0, body);
+    fcyl(g, r*.5, .008, 0, ceil ? -h - .008 : h, 0, col);
+  }
+  const sp = sysSprite(o.t); sp.userData.id = o.id;
+  sp.position.set(0, d.m === 'c' ? -.24 : d.m === 'f' ? .24 : 0, d.m === 'w' ? sz[2] + .14 : 0);
+  g.add(sp);
+  g.position.set(X(o.x), floorElev(o.x, o.y) + o.z, Z(o.y));
+  g.rotation.y = -o.rot * Math.PI / 180;
+  sysL[d.l].add(g);
+}
+const UPV = new THREE.Vector3(0, 1, 0);
+function buildRun(r){
+  const k = RUNK[r.k]; if (!k) return;
+  const m = runMat(k.c), grp = new THREE.Group();
+  const y = p => floorElev(p[0], p[1]) + r.h;
+  r.pts.forEach(p => {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(k.r * 1.25, 12, 8), m);
+    b.position.set(X(p[0]), y(p), Z(p[1])); b.renderOrder = 11; grp.add(b);
+  });
+  for (let i = 0; i < r.pts.length - 1; i++){
+    const a = new THREE.Vector3(X(r.pts[i][0]), y(r.pts[i]), Z(r.pts[i][1]));
+    const b = new THREE.Vector3(X(r.pts[i+1][0]), y(r.pts[i+1]), Z(r.pts[i+1][1]));
+    const dir = b.clone().sub(a), len = dir.length(); if (len < 1e-4) continue;
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(k.r, k.r, len, 10), m);
+    c.position.copy(a).add(b).multiplyScalar(.5);
+    c.quaternion.setFromUnitVectors(UPV, dir.normalize());
+    c.renderOrder = 11; grp.add(c);
+  }
+  sysL[k.l].add(grp);
 }
 
 /* Elementi fissi: base, strada, scale */
@@ -1383,7 +1586,9 @@ const TIPS = {
   fence:'Trascina per disegnare una ringhiera.',
   cut:'Tocca un parapetto, una vetrata o una ringhiera per dividerlo in due pezzi. Poi scegli Seleziona per cambiare un pezzo.',
   furn:'Scegli un arredo dall’elenco e tocca la pianta per metterlo.',
-  label:'Clicca per aggiungere il nome di una stanza.'
+  label:'Clicca per aggiungere il nome di una stanza.',
+  sys:'Scegli un elemento e tocca la pianta. Quelli a parete si agganciano al muro più vicino, dal lato dove tocchi.',
+  run:'Scegli il tipo di linea e trascina sulla pianta per tracciare un tratto. Puoi tracciarne quanti vuoi, uno dopo l’altro.'
 };
 
 /* ---------- geometria 2D ---------- */
@@ -1420,6 +1625,8 @@ function guides(ex){
   plan.walls.forEach(w => { if (w.id === ex) return; xs.push(w.x1,w.x2); ys.push(w.y1,w.y2); });
   plan.columns.forEach(c => { if (c.id === ex) return; xs.push(c.x0,c.x1); ys.push(c.y0,c.y1); });
   plan.floors.forEach(f => { if (f.id === ex) return; f.pts.forEach(p => { xs.push(p[0]); ys.push(p[1]); }); });
+  plan.runs.forEach(r => { if (r.id === ex || !layerOn[RUNK[r.k].l]) return; r.pts.forEach(p => { xs.push(p[0]); ys.push(p[1]); }); });
+  plan.sys.forEach(o => { if (o.id === ex || !layerOn[SYS[o.t].l]) return; xs.push(o.x); ys.push(o.y); });
   return { xs:xs, ys:ys };
 }
 function snap1(v, arr, tol){
@@ -1446,7 +1653,7 @@ function selItem(){
     const w = byId(plan.walls, sel.id); const o = w && w.ops[sel.i];
     return o ? { type:'op', wall:w, op:o, obj:o } : null;
   }
-  const arr = { wall:plan.walls, column:plan.columns, floor:plan.floors, rail:plan.rails, label:plan.labels, furn:plan.furniture }[sel.type];
+  const arr = { wall:plan.walls, column:plan.columns, floor:plan.floors, rail:plan.rails, label:plan.labels, furn:plan.furniture, sys:plan.sys, run:plan.runs }[sel.type];
   const obj = arr && byId(arr, sel.id);
   return obj ? { type:sel.type, obj:obj } : null;
 }
@@ -1458,6 +1665,7 @@ function validateSel(){ if (sel && !selItem()) sel = null; }
 
 function hitTest(px, py){
   const tol = tolPx();
+  const sh = sysHit(px, py, tol); if (sh) return sh;
   for (const w of plan.walls){
     const t = wallT(w), h = isH(w), c = h ? w.y1 : w.x1;
     for (let i=0; i<w.ops.length; i++){
@@ -1504,7 +1712,7 @@ function getHandles(){
     const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + 7;
     return [{ k:'rot', x:f.x - Math.sin(th) * off, y:f.y + Math.cos(th) * off }];
   }
-  if (it.type === 'floor' || it.type === 'rail') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
+  if (it.type === 'floor' || it.type === 'rail' || it.type === 'run') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
   return [];
 }
 
@@ -1534,8 +1742,8 @@ function shiftItem(type, obj, dx, dy){
     obj.ops.forEach(o => { o.p += h ? dx : dy; });
   } else if (type === 'op'){ /* gestito a parte */ }
   else if (type === 'column'){ obj.x0 += dx; obj.x1 += dx; obj.y0 += dy; obj.y1 += dy; }
-  else if (type === 'floor' || type === 'rail'){ obj.pts.forEach(p => { p[0] += dx; p[1] += dy; }); }
-  else if (type === 'label' || type === 'furn'){ obj.x += dx; obj.y += dy; }
+  else if (type === 'floor' || type === 'rail' || type === 'run'){ obj.pts.forEach(p => { p[0] += dx; p[1] += dy; }); }
+  else if (type === 'label' || type === 'furn' || type === 'sys'){ obj.x += dx; obj.y += dy; }
 }
 function nudge(dx, dy){
   const it = selItem(); if (!it) return;
@@ -1543,6 +1751,9 @@ function nudge(dx, dy){
     if (it.type === 'op'){ const h = isH(it.wall); const a = h ? it.wall.x1 : it.wall.y1, b = h ? it.wall.x2 : it.wall.y2;
       it.op.p = clamp(it.op.p + (h ? dx : dy), a + it.op.w/2, b - it.op.w/2); }
     else shiftItem(it.type, it.obj, dx, dy);
+    if (it.type === 'sys' && SYS[it.obj.t].m === 'w'){
+      const ws = wallSnap(it.obj.x, it.obj.y, 2); if (ws){ it.obj.x = ws.x; it.obj.y = ws.y; it.obj.rot = ws.rot; }
+    }
   });
 }
 function deleteSel(){
@@ -1550,7 +1761,7 @@ function deleteSel(){
   mutate(() => {
     if (it.type === 'op') it.wall.ops.splice(sel.i, 1);
     else {
-      const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture' }[it.type];
+      const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture', sys:'sys', run:'runs' }[it.type];
       plan[key] = plan[key].filter(x => x.id !== it.obj.id);
     }
   });
@@ -1560,9 +1771,10 @@ function duplicateSel(){
   const it = selItem(); if (!it || it.type === 'op') return;
   let nid = null;
   mutate(() => {
-    const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture' }[it.type];
+    const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture', sys:'sys', run:'runs' }[it.type];
     const c = clone(it.obj); c.id = uid(); nid = c.id;
-    shiftItem(it.type, c, 10, 10);
+    if (it.type === 'sys' && SYS[c.t].m === 'w'){ const v = c.rot === 90 || c.rot === 270; shiftItem('sys', c, v ? 0 : 5, v ? 5 : 0); }
+    else shiftItem(it.type, c, 10, 10);
     plan[key].push(c);
   });
   if (nid){ sel = { type:it.type, id:nid }; overlayDirty = true; refreshProps(); }
@@ -1589,6 +1801,8 @@ function attachedFor(w){
 /* ---------- interazione col puntatore ---------- */
 function setTool(t){
   tool = t; if (t !== 'select') sel = null;
+  if (t === 'sys') setLayer(SYS[sysType].l, true);
+  if (t === 'run') setLayer(RUNK[runKind].l, true);
   drag = null; draft = null;
   document.querySelectorAll('#dock button[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
   canvas.style.cursor = t === 'select' ? 'default' : 'crosshair';
@@ -1609,11 +1823,13 @@ const ICONS = {
   fence:'<svg class="i" viewBox="0 0 24 24"><path d="M3 8h18M3 17h18M5 8v11M9.7 8v9M14.3 8v9M19 8v11"/></svg>',
   cut:'<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8.2L20 18M8 15.8L20 6"/></svg>',
   furn:'<svg class="i" viewBox="0 0 24 24"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4H3z"/><path d="M6 17v2M18 17v2"/></svg>',
-  label:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18l4.5-11L13 18M5.7 14h5.6M16 9.5h4M18 9.5V18"/></svg>'
+  label:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18l4.5-11L13 18M5.7 14h5.6M16 9.5h4M18 9.5V18"/></svg>',
+  sys:'<svg class="i" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg>',
+  run:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18h7V7h9"/><circle cx="4" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="7" r="1.8" fill="currentColor"/></svg>'
 };
 const TOOLDEF = [['select','Seleziona'],['|'],['wallE','Muro esterno'],['wallI','Muro interno'],['|'],
   ['door','Porta'],['win','Finestra'],['pf','Porta-finestra'],['open','Varco'],['|'],
-  ['column','Colonna'],['floor','Pavimento'],['rail','Parapetto'],['glazed','Vetrata'],['fence','Ringhiera'],['cut','Dividi'],['furn','Arredi'],['label','Nome stanza']];
+  ['column','Colonna'],['floor','Pavimento'],['rail','Parapetto'],['glazed','Vetrata'],['fence','Ringhiera'],['cut','Dividi'],['furn','Arredi'],['label','Nome stanza'],['|'],['sys','Impianti'],['run','Tracciati']];
 function buildDock(){
   const d = $('dock');
   TOOLDEF.forEach(t => {
@@ -1656,7 +1872,7 @@ function editorDown(e){
              attached:it.type === 'wall' ? attachedFor(it.obj) : [] };
     return;
   }
-  if (tool === 'wallE' || tool === 'wallI' || tool === 'rail' || tool === 'glazed' || tool === 'fence'){
+  if (tool === 'wallE' || tool === 'wallI' || tool === 'rail' || tool === 'glazed' || tool === 'fence' || tool === 'run'){
     const g = guides(null), q = [snap1(p[0], g.xs, tol*.8), snap1(p[1], g.ys, tol*.8)];
     draft = { kind:'line', x0:q[0], y0:q[1], x1:q[0], y1:q[1] };
     drag = { kind:'draw', before:before, g:g };
@@ -1702,7 +1918,12 @@ function editorMove(e){
     } else if (it.type === 'column'){
       const c = it.obj, ddx = snapDelta([o.x0,o.x1], dx, g.xs, tol), ddy = snapDelta([o.y0,o.y1], dy, g.ys, tol);
       c.x0 = o.x0 + ddx; c.x1 = o.x1 + ddx; c.y0 = o.y0 + ddy; c.y1 = o.y1 + ddy;
-    } else if (it.type === 'floor' || it.type === 'rail'){
+    } else if (it.type === 'sys'){
+      const ob = it.obj, nx = o.x + dx, ny = o.y + dy;
+      const ws = SYS[ob.t].m === 'w' ? wallSnap(nx, ny, tol*1.8) : null;
+      if (ws){ ob.x = ws.x; ob.y = ws.y; ob.rot = ws.rot; }
+      else { ob.rot = o.rot; ob.x = o.x + snapDelta([o.x], dx, g.xs, tol); ob.y = o.y + snapDelta([o.y], dy, g.ys, tol); }
+    } else if (it.type === 'floor' || it.type === 'rail' || it.type === 'run'){
       const ddx = snapDelta(o.pts.map(q => q[0]), dx, g.xs, tol), ddy = snapDelta(o.pts.map(q => q[1]), dy, g.ys, tol);
       it.obj.pts = o.pts.map(q => [q[0] + ddx, q[1] + ddy]);
     } else if (it.type === 'label' || it.type === 'furn'){
@@ -1731,7 +1952,7 @@ function editorMove(e){
         const x0 = Math.min(sx, opp[0]), x1 = Math.max(sx, opp[0]), y0 = Math.min(sy, opp[1]), y1 = Math.max(sy, opp[1]);
         if (x1 - x0 >= 4 && y1 - y0 >= 4) it.obj.pts = [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
       } else it.obj.pts[k] = [sx, sy];
-    } else if (it.type === 'rail'){
+    } else if (it.type === 'rail' || it.type === 'run'){
       it.obj.pts[k] = [sx, sy];
     } else if (it.type === 'furn'){
       const f = it.obj;
@@ -1776,6 +1997,12 @@ function finishDraw(d){
     plan.floors.push(f); pushUndo(before); rebuild(); setTool('select'); setSel({ type:'floor', id:f.id }); return;
   }
   if (Math.hypot(dr.x1 - dr.x0, dr.y1 - dr.y0) < 4) return;
+  if (tool === 'run'){
+    const r = { id:uid(), k:runKind, h:RUNK[runKind].h, pts:[[dr.x0,dr.y0],[dr.x1,dr.y1]] };
+    plan.runs.push(r); pushUndo(before); rebuild();
+    flash(RUNK[runKind].n + ': tratto di ' + fmtM(runLen(r)) + '. Trascina ancora per continuare.');
+    return;
+  }
   if (tool === 'wallE' || tool === 'wallI'){
     const w = { id:uid(), x1:Math.min(dr.x0,dr.x1), y1:Math.min(dr.y0,dr.y1), x2:Math.max(dr.x0,dr.x1), y2:Math.max(dr.y0,dr.y1), k:tool === 'wallE' ? 'e' : 'i', ops:[] };
     plan.walls.push(w); pushUndo(before); rebuild(); setTool('select'); setSel({ type:'wall', id:w.id });
@@ -1818,6 +2045,7 @@ function splitRail(){
 function doPlace(d){
   const p = d.p, tol = tolPx(), before = d.before;
   if (tool === 'cut'){ cutRail(p); return; }
+  if (tool === 'sys'){ placeSys(p, before); return; }
   if (tool === 'column'){
     const cx = opt.snap ? Math.round(p[0]/GRID)*GRID : p[0], cy = opt.snap ? Math.round(p[1]/GRID)*GRID : p[1];
     const c = { id:uid(), x0:cx-5, x1:cx+5, y0:cy-5, y1:cy+5 };
@@ -1846,6 +2074,199 @@ function doPlace(d){
   best.ops.push({ p:pos, w:w, t:tool, s:s });
   pushUndo(before); rebuild(); setSel({ type:'op', id:best.id, i:best.ops.length - 1 });
 }
+
+/* Aggancio al muro: il punto finisce sulla faccia del muro più vicino, dal lato del clic, col fronte verso la stanza */
+function wallSnap(px, py, tol){
+  let best = null, bd = Infinity;
+  plan.walls.forEach(w => { const d = segDist(px, py, w.x1, w.y1, w.x2, w.y2); if (d <= wallT(w)/2 + tol && d < bd){ bd = d; best = w; } });
+  if (!best) return null;
+  const h = isH(best), c = h ? best.y1 : best.x1, lo = h ? best.x1 : best.y1, hi = h ? best.x2 : best.y2;
+  let along = h ? px : py; if (opt.snap) along = Math.round(along / GRID) * GRID;
+  along = clamp(along, lo + 1, hi - 1);
+  const side = ((h ? py : px) - c) >= 0 ? 1 : -1, off = wallT(best)/2 + .3;
+  return h ? { x:along, y:c + side*off, rot:side > 0 ? 0 : 180 } : { x:c + side*off, y:along, rot:side > 0 ? 270 : 90 };
+}
+/* Punto o tracciato d’impianto sotto il puntatore (solo nei livelli accesi): il simbolo è largo circa 26 px */
+function sysHit(px, py, tol){
+  let best = null, bd = Infinity;
+  plan.sys.forEach(o => {
+    if (!layerOn[SYS[o.t].l]) return;
+    const d = Math.hypot(px - o.x, py - o.y);
+    if (d <= Math.max(4.5, tol*1.3) && d < bd){ bd = d; best = { type:'sys', id:o.id }; }
+  });
+  if (best) return best;
+  for (let j = plan.runs.length - 1; j >= 0; j--){
+    const r = plan.runs[j]; if (!layerOn[RUNK[r.k].l]) continue;
+    for (let i=0; i<r.pts.length-1; i++){
+      const a = r.pts[i], b = r.pts[i+1];
+      if (segDist(px,py,a[0],a[1],b[0],b[1]) <= 2 + tol*.5) return { type:'run', id:r.id };
+    }
+  }
+  return null;
+}
+function sysSpot(p){
+  const d = SYS[sysType];
+  let q = { x:opt.snap ? Math.round(p[0]/GRID)*GRID : p[0], y:opt.snap ? Math.round(p[1]/GRID)*GRID : p[1], rot:0, wall:false };
+  if (d.m === 'w'){ const ws = wallSnap(p[0], p[1], tolPx()*1.5); if (ws){ q = ws; q.wall = true; } }
+  return q;
+}
+function placeSys(p, before){
+  const d = SYS[sysType], q = sysSpot(p);
+  plan.sys.push({ id:uid(), t:sysType, x:q.x, y:q.y, z:d.z, rot:q.rot });
+  pushUndo(before); rebuild();
+  flash(d.n + ' in ' + roomName(q.x, q.y) + '. Tocca ancora per metterne un altro.');
+}
+/* Attacchi tipici dietro ai sanitari: [tipo, spostamento laterale (m), altezza (m), 'c' = al centro a pavimento] */
+const FIX = {
+  wc:       [['af', -.15, .2], ['scarico', 0, .2]],
+  bidet:    [['af', -.08, .2], ['ac', .08, .2], ['scarico', 0, .15]],
+  lavabo:   [['af', -.08, .55], ['ac', .08, .55], ['scarico', 0, .45]],
+  doccia:   [['af', -.1, 1.1], ['ac', .1, 1.1], ['piletta', 0, 0, 'c']],
+  vasca:    [['af', -.1, .7], ['ac', .1, .7], ['scarico', 0, .2]],
+  cucina:   [['af', -.08, .55], ['ac', .08, .55], ['scarico', 0, .45]],
+  lavatrice:[['af', .15, .9], ['scarico', -.1, .7], ['schuko', -.3, .3]]
+};
+function addFixtureHookups(){
+  let n = 0;
+  mutate(() => {
+    plan.furniture.forEach(f => {
+      const spec = FIX[f.type]; if (!spec) return;
+      const th = f.rot * Math.PI / 180;
+      spec.forEach(sp => {
+        const lx = sp[1] / S, ly = sp[3] === 'c' ? 0 : -f.d / S / 2;
+        const x = f.x + lx * Math.cos(th) - ly * Math.sin(th), y = f.y + lx * Math.sin(th) + ly * Math.cos(th);
+        if (plan.sys.some(o => o.t === sp[0] && Math.hypot(o.x - x, o.y - y) < 6)) return;
+        plan.sys.push({ id:uid(), t:sp[0], x:x, y:y, z:sp[2], rot:f.rot }); n++;
+      });
+    });
+  });
+  setLayer('h2o', true);
+  flash(n ? 'Aggiunti ' + n + ' attacchi dietro a sanitari, cucina e lavatrice. Controllali e spostali dove servono.' : 'Gli attacchi ci sono già.');
+}
+
+/* ---------- livelli degli impianti ---------- */
+const LAYER_KEY = 'piantina-livelli-impianti';
+const layerOn = { el:false, h2o:false, dom:false };
+try { const ls = JSON.parse(localStorage.getItem(LAYER_KEY) || 'null'); if (ls) Object.keys(layerOn).forEach(k => { layerOn[k] = !!ls[k]; }); } catch(e){}
+function setLayer(k, on){
+  layerOn[k] = !!on; sysL[k].visible = !!on;
+  const cb = $('ly-' + k); if (cb) cb.checked = !!on;
+  $('btnSys').classList.toggle('on', Object.keys(layerOn).some(x => layerOn[x]));
+  try { localStorage.setItem(LAYER_KEY, JSON.stringify(layerOn)); } catch(e){}
+  if (!on && sel && (sel.type === 'sys' || sel.type === 'run')){
+    const it = selItem();
+    if (it && (it.type === 'sys' ? SYS[it.obj.t].l : RUNK[it.obj.k].l) === k) setSel(null);
+  }
+  overlayDirty = true;
+}
+Object.keys(layerOn).forEach(k => {
+  setLayer(k, layerOn[k]);
+  $('ly-' + k).addEventListener('change', e => setLayer(k, e.target.checked));
+});
+const sysMenu = $('sysmenu'), btnSys = $('btnSys');
+function toggleSysMenu(open){ sysMenu.hidden = !open; btnSys.setAttribute('aria-expanded', String(open)); if (open) toggleMenu(false); }
+btnSys.addEventListener('click', () => toggleSysMenu(sysMenu.hidden));
+document.addEventListener('pointerdown', e => {
+  if (!sysMenu.hidden && !sysMenu.contains(e.target) && !btnSys.contains(e.target)) toggleSysMenu(false);
+});
+window.addEventListener('keydown', e => { if (e.key === 'Escape'){ if (!sysMenu.hidden) toggleSysMenu(false); if (!$('qty').hidden) $('qty').hidden = true; } });
+
+/* ---------- elenco quantità ---------- */
+function roomName(px, py){
+  let best = null, ba = Infinity;
+  plan.floors.forEach(f => { if (f.name && pointInPoly(px, py, f.pts)){ const a = polyArea(f.pts); if (a < ba){ ba = a; best = f.name; } } });
+  return best || 'Esterno';
+}
+function runLen(r){ let L = 0; for (let i=0; i<r.pts.length-1; i++) L += Math.hypot(r.pts[i+1][0]-r.pts[i][0], r.pts[i+1][1]-r.pts[i][1]); return L * S; }
+const fmtNum = (v, dg) => v.toLocaleString('it-IT', { minimumFractionDigits:dg, maximumFractionDigits:dg });
+const fmtM = m => fmtNum(m, 1) + ' m';
+function sysQty(){
+  const out = {}, im = {}, rm = {};
+  Object.keys(LAYERS).forEach(l => { out[l] = { items:[], runs:[] }; });
+  plan.sys.forEach(o => {
+    const e = im[o.t] || (im[o.t] = { t:o.t, n:SYS[o.t].n, q:0, where:{} }), rn = roomName(o.x, o.y);
+    e.q++; e.where[rn] = (e.where[rn] || 0) + 1;
+  });
+  plan.runs.forEach(r => {
+    const e = rm[r.k] || (rm[r.k] = { k:r.k, n:RUNK[r.k].n, q:0, where:{} }), L = runLen(r);
+    for (let i=0; i<r.pts.length-1; i++){
+      const a = r.pts[i], b = r.pts[i+1], rn = roomName((a[0]+b[0])/2, (a[1]+b[1])/2);
+      e.where[rn] = (e.where[rn] || 0) + Math.hypot(b[0]-a[0], b[1]-a[1]) * S;
+    }
+    e.q += L;
+  });
+  Object.keys(SYS).forEach(k => { if (im[k]) out[SYS[k].l].items.push(im[k]); });
+  Object.keys(RUNK).forEach(k => { if (rm[k]) out[RUNK[k].l].runs.push(rm[k]); });
+  return out;
+}
+const whereTxt = (w, m) => Object.keys(w).sort((a,b) => w[b] - w[a]).map(k => k + ' ' + (m ? fmtM(w[k]) : w[k])).join(', ');
+function openQty(){
+  const q = sysQty(), body = $('qtybody'); body.textContent = '';
+  let any = false;
+  Object.keys(LAYERS).forEach(l => {
+    const L = q[l]; if (!L.items.length && !L.runs.length) return;
+    any = true;
+    const h = el('h3'); const dot = el('i','ldot'); dot.style.background = LAYERS[l].c;
+    h.append(dot, document.createTextNode(LAYERS[l].n)); body.appendChild(h);
+    const t = el('table'), hr = el('tr');
+    hr.append(el('th', null, 'Voce'), el('th', null, 'Quantità'), el('th', null, 'Dove'));
+    t.appendChild(hr);
+    L.items.concat(L.runs).forEach(e => {
+      const m = L.runs.indexOf(e) >= 0, tr = el('tr');
+      const c0 = el('td'), c1 = el('span','vc'); c0.appendChild(c1);
+      if (e.t){ const g = el('b','gl s', SYS[e.t].g); g.style.background = sysColor(e.t); c1.appendChild(g); }
+      else { const sw = el('i'); sw.style.cssText = 'flex:none;width:24px;height:5px;margin-right:8px;border-radius:3px;background:' + RUNK[e.k].c; c1.appendChild(sw); }
+      c1.appendChild(document.createTextNode(e.n));
+      tr.append(c0, el('td','n', m ? fmtM(e.q) : String(e.q)), el('td','w', whereTxt(e.where, m)));
+      t.appendChild(tr);
+    });
+    body.appendChild(t);
+  });
+  if (!any) body.appendChild(note('Non ci sono ancora impianti. Premi Modifica, poi Impianti per mettere prese, attacchi e sensori, o Tracciati per disegnare cavi e tubi.'));
+  else body.appendChild(note('Le lunghezze sono misurate in pianta: per salite, discese e sfridi conviene aggiungere un 10–15%.'));
+  $('qtycopy').disabled = $('qtycsv').disabled = !any;
+  $('qty').hidden = false; toggleSysMenu(false); toggleMenu(false);
+}
+function qtyText(){
+  const q = sysQty(), out = [];
+  Object.keys(LAYERS).forEach(l => {
+    const L = q[l]; if (!L.items.length && !L.runs.length) return;
+    out.push(LAYERS[l].n.toUpperCase());
+    L.items.forEach(e => out.push('- ' + e.n + ': ' + e.q + ' (' + whereTxt(e.where) + ')'));
+    L.runs.forEach(e => out.push('- ' + e.n + ': ' + fmtM(e.q) + ' (' + whereTxt(e.where, true) + ')'));
+    out.push('');
+  });
+  return out.join('\n').trim();
+}
+function qtyCsv(){
+  const q = sysQty(), rows = [['Impianto','Voce','Quantità','Unità','Dove']];
+  Object.keys(LAYERS).forEach(l => {
+    q[l].items.forEach(e => rows.push([LAYERS[l].n, e.n, String(e.q), 'pz', whereTxt(e.where)]));
+    q[l].runs.forEach(e => rows.push([LAYERS[l].n, e.n, fmtNum(e.q, 2), 'm', whereTxt(e.where, true)]));
+  });
+  return '﻿' + rows.map(r => r.map(c => /[;"\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(';')).join('\r\n') + '\r\n';
+}
+$('btnQty').addEventListener('click', openQty);
+$('qtyclose').addEventListener('click', () => { $('qty').hidden = true; });
+$('qtycopy').addEventListener('click', async () => {
+  const t = qtyText();
+  try { await navigator.clipboard.writeText(t); flash('Elenco copiato.'); }
+  catch(e){
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){}
+    ta.remove(); flash(ok ? 'Elenco copiato.' : 'Non riesco a copiare: usa Scarica CSV.');
+  }
+});
+$('qtycsv').addEventListener('click', async () => {
+  const data = qtyCsv(), name = 'impianti-quantita.csv';
+  try {
+    const dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
+    if (dl){ await dl.save({ filename:name, data:data }); return; }
+  } catch(e){ if (e && e.code === 'declined') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], { type:'text/csv;charset=utf-8' })); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+});
 
 window.addEventListener('keydown', e => {
   if (!editing || typing(e.target)) return;
@@ -1919,6 +2340,14 @@ function drawOverlay(){
           else   { const x0 = finishSide === 'a' ? a[0] - tt/2 - th : a[0] + tt/2; ovBox(x0, x0 + th, Math.min(a[1],b[1]) - tt/2, Math.max(a[1],b[1]) + tt/2, 0, .42, ORG, .9); }
         }
       }
+    } else if (it.type === 'sys'){
+      const o = it.obj; ovBox(o.x - 3, o.x + 3, o.y - 3, o.y + 3, 0, .12, ACC, .35);
+    } else if (it.type === 'run'){
+      const r = it.obj;
+      for (let i=0; i<r.pts.length-1; i++){
+        const a = r.pts[i], b = r.pts[i+1];
+        ovBox(Math.min(a[0],b[0]) - 3, Math.max(a[0],b[0]) + 3, Math.min(a[1],b[1]) - 3, Math.max(a[1],b[1]) + 3, 0, .1, ACC, .45);
+      }
     } else if (it.type === 'furn'){
       const f = it.obj; ovRot(f.x, f.y, f.w / S + 2, f.d / S + 2, f.rot, .06, ACC, .45);
     } else if (it.type === 'label'){
@@ -1927,12 +2356,19 @@ function drawOverlay(){
     }
     getHandles().forEach(h => ovHandle(h.x, h.y, col));
   }
+  if (ghost && tool === 'sys' && !drag){
+    const d = SYS[ghost.t];
+    const sm = new THREE.SpriteMaterial({ map:glyphTex(d.g, sysColor(ghost.t)), depthTest:false, depthWrite:false, transparent:true, opacity:.6, sizeAttenuation:false });
+    const sp = new THREE.Sprite(sm); sp.scale.set(sprK*1.15, sprK*1.15, 1); sp.renderOrder = 32;
+    sp.position.set(X(ghost.x), .5, Z(ghost.y)); editG.add(sp);
+    ovBox(ghost.x - 2.5, ghost.x + 2.5, ghost.y - 2.5, ghost.y + 2.5, 0, .1, ghost.wall ? ORG : ACC, .9);
+  }
   if (draft){
     if (draft.kind === 'rect'){
       const x0 = Math.min(draft.x0,draft.x1), x1 = Math.max(draft.x0,draft.x1), y0 = Math.min(draft.y0,draft.y1), y1 = Math.max(draft.y0,draft.y1);
       if (x1 > x0 && y1 > y0) ovPoly([[x0,y0],[x1,y0],[x1,y1],[x0,y1]], ACC, .35, .12);
     } else {
-      const t = tool === 'wallE' ? 8 : tool === 'wallI' ? 4 : 8;
+      const t = tool === 'wallE' ? 8 : tool === 'wallI' ? 4 : tool === 'run' ? 3 : 8;
       ovBox(Math.min(draft.x0,draft.x1) - t/2, Math.max(draft.x0,draft.x1) + t/2, Math.min(draft.y0,draft.y1) - t/2, Math.max(draft.y0,draft.y1) + t/2, 0, .34, ACC, .6);
     }
   }
@@ -2074,13 +2510,70 @@ function buildCatalog(){
   });
   propsEl.appendChild(note('Scegli un arredo e tocca la pianta per metterlo. Poi lo sposti trascinandolo, lo ruoti col cerchio o dalla scheda, e puoi cambiarne misure e colore.'));
 }
+let sysType = 'presa', runKind = 'el';
+let catLayer = 'el';
+const narrowUI = () => !!(window.matchMedia && matchMedia('(max-width:719px)').matches);
+/* Sul telefono la scheda copre la pianta: dopo la scelta la riduco, così si può toccare dove metterlo */
+function collapseSheetIfNarrow(){
+  if (!narrowUI()) return;
+  sheetEl.dataset.collapsed = '1';
+  $('scollapse').setAttribute('aria-label', 'Apri la scheda'); $('scollapse').style.transform = 'rotate(180deg)';
+}
+function buildSysCatalog(){
+  const tabs = el('div','segs lyt');
+  Object.keys(LAYERS).forEach(l => {
+    const b = el('button'); b.type = 'button';
+    const dot = el('i','ldot'); dot.style.background = LAYERS[l].c;
+    b.append(dot, document.createTextNode(LAYERS[l].n));
+    b.setAttribute('aria-pressed', String(l === catLayer));
+    b.addEventListener('click', () => {
+      catLayer = l; setLayer(l, true);
+      if (SYS[sysType].l !== l) sysType = Object.keys(SYS).find(k => SYS[k].l === l);
+      refreshProps();
+    });
+    tabs.appendChild(b);
+  });
+  propsEl.appendChild(tabs);
+  [catLayer].forEach(l => {
+    const row = el('div','tex'); row.style.marginTop = '10px';
+    Object.keys(SYS).filter(k => SYS[k].l === l).forEach(k => {
+      const b = el('button','tx none sysb'); b.type = 'button';
+      const gl = el('b','gl', SYS[k].g); gl.style.background = sysColor(k);
+      b.append(gl, el('em', null, SYS[k].n));
+      b.setAttribute('aria-pressed', String(k === sysType));
+      b.addEventListener('click', () => { sysType = k; setLayer(l, true); refreshProps(); collapseSheetIfNarrow(); });
+      row.appendChild(b);
+    });
+    propsEl.appendChild(row);
+    if (l === 'h2o'){
+      const a = el('div','acts'); a.style.marginTop = '8px';
+      a.append(btn('Aggiungi gli attacchi ai sanitari', addFixtureHookups));
+      propsEl.appendChild(a);
+    }
+  });
+  propsEl.appendChild(note('Tocca la pianta per mettere l’elemento scelto: puoi metterne quanti vuoi. Poi scegli Seleziona per spostarli, cambiare altezza o scrivere il circuito.'));
+}
+function buildRunCatalog(){
+  propsEl.appendChild(section('Tipo di linea'));
+  Object.keys(RUNK).forEach(k => {
+    const b = el('button','rk'); b.type = 'button';
+    const sw = el('i'); sw.style.background = RUNK[k].c;
+    b.append(sw, el('span', null, RUNK[k].n + ' (' + LAYERS[RUNK[k].l].n.toLowerCase() + ')'));
+    b.setAttribute('aria-pressed', String(k === runKind));
+    b.addEventListener('click', () => { runKind = k; setLayer(RUNK[k].l, true); refreshProps(); collapseSheetIfNarrow(); });
+    propsEl.appendChild(b);
+  });
+  propsEl.appendChild(note('Trascina per tracciare un tratto dritto. I tratti si agganciano alle estremità di quelli già fatti, così puoi seguire il percorso a pezzi. Le lunghezze finiscono nell’elenco quantità.'));
+}
 function refreshProps(){
   propsEl.textContent = '';
   const it = (editing && tool === 'select') ? selItem() : null;
-  const cat = editing && tool === 'furn';
-  sheetEl.hidden = !(it || cat);
+  const cat = editing && tool === 'furn', scat = editing && tool === 'sys', rcat = editing && tool === 'run';
+  sheetEl.hidden = !(it || cat || scat || rcat);
   setHint();
   if (cat){ $('stitle').textContent = 'Arredi'; buildCatalog(); return; }
+  if (scat){ catLayer = SYS[sysType].l; $('stitle').textContent = 'Impianti: ' + SYS[sysType].n; buildSysCatalog(); return; }
+  if (rcat){ $('stitle').textContent = 'Tracciati: ' + RUNK[runKind].n; buildRunCatalog(); return; }
   if (!it) return;
   const add = n => propsEl.appendChild(n);
   const acts = el('div','acts');
@@ -2147,6 +2640,22 @@ function refreshProps(){
     add(section('Colore'));
     add(colorRow(f.col, v => mutate(() => { f.col = v || undefined; }), true));
     acts.append(btn('Ruota di 90°', () => mutate(() => { f.rot = (f.rot + 90) % 360; })), btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
+  } else if (it.type === 'sys'){
+    const o = it.obj, d = SYS[o.t]; title.textContent = d.n;
+    add(fld('Tipo', selIn(Object.keys(SYS).filter(k => SYS[k].l === d.l).map(k => [k, SYS[k].n]), o.t, v => mutate(() => {
+      if (SYS[v].m !== d.m || o.z === d.z) o.z = SYS[v].z; o.t = v; }))));
+    add(fld('Altezza da terra (m)', numIn(o.z, .05, 0, v => mutate(() => { o.z = clamp(v, 0, 4); }))));
+    if (d.m !== 'w') add(fld('Rotazione (°)', numIn(o.rot, 15, 0, v => mutate(() => { o.rot = ((v % 360) + 360) % 360; }))));
+    add(fld('Circuito o nota', txtIn(o.circ || '', v => mutate(() => { o.circ = v || undefined; }))));
+    add(note(LAYERS[d.l].n + ', ' + SYS_MOUNT[d.m] + ', in ' + roomName(o.x, o.y) + '.' + (d.m === 'w' ? ' Trascinalo per spostarlo lungo il muro o su un altro muro.' : '')));
+    acts.append(btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
+  } else if (it.type === 'run'){
+    const r = it.obj; title.textContent = RUNK[r.k].n;
+    add(fld('Tipo', selIn(Object.keys(RUNK).map(k => [k, RUNK[k].n]), r.k, v => mutate(() => { if (r.h === RUNK[r.k].h) r.h = RUNK[v].h; r.k = v; }))));
+    add(fld('Altezza da terra (m)', numIn(r.h, .05, 0, v => mutate(() => { r.h = clamp(v, 0, 4); }))));
+    add(fld('Circuito o nota', txtIn(r.circ || '', v => mutate(() => { r.circ = v || undefined; }))));
+    add(note('Lunghezza in pianta: ' + fmtM(runLen(r)) + '. Trascina i cerchi per spostare le estremità.'));
+    acts.append(btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
   } else if (it.type === 'label'){
     const l = it.obj; title.textContent = 'Nome sul pavimento';
     add(fld('Testo', txtIn(l.text, v => mutate(() => { l.text = v; }))));
@@ -2166,7 +2675,7 @@ $('scollapse').addEventListener('click', () => {
 /* ---------- menu opzioni ---------- */
 const menuEl = $('menu'), btnMenu = $('btnMenu');
 function toggleMenu(open){ menuEl.hidden = !open; btnMenu.setAttribute('aria-expanded', String(open)); }
-btnMenu.addEventListener('click', () => toggleMenu(menuEl.hidden));
+btnMenu.addEventListener('click', () => { if (menuEl.hidden) toggleSysMenu(false); toggleMenu(menuEl.hidden); });
 document.addEventListener('pointerdown', e => {
   if (!menuEl.hidden && !menuEl.contains(e.target) && !btnMenu.contains(e.target)) toggleMenu(false);
 });
@@ -2361,7 +2870,39 @@ canvas.addEventListener('pointerdown', e => {
   }
   editorDown(e);
 });
+/* Al passaggio del mouse: anteprima di dove finirà l’elemento e scheda veloce sui simboli */
+let ghost = null;
+const tipEl = $('tip');
+function hideTip(){ if (!tipEl.hidden) tipEl.hidden = true; }
+function hoverSys(e){
+  if (e.pointerType !== 'mouse' || mode === 'walk' || drag || e.buttons){ hideTip(); return; }
+  const p = ground(e); if (!p){ hideTip(); return; }
+  if (editing && tool === 'sys'){
+    const q = sysSpot(p); ghost = { t:sysType, x:q.x, y:q.y, wall:q.wall }; overlayDirty = true; hideTip(); return;
+  }
+  if (ghost){ ghost = null; overlayDirty = true; }
+  if (editing && tool !== 'select'){ hideTip(); return; }
+  const h = sysHit(p[0], p[1], tolPx());
+  if (!h){ hideTip(); return; }
+  tipEl.textContent = '';
+  if (h.type === 'sys'){
+    const o = byId(plan.sys, h.id), d = SYS[o.t];
+    tipEl.append(el('b', null, d.n), el('span', null, roomName(o.x, o.y) + ', ' + SYS_MOUNT[d.m] + (d.m === 'f' ? '' : ', a ' + fmtNum(o.z, 2) + ' m da terra') + (o.circ ? '. ' + o.circ : '')));
+  } else {
+    const r = byId(plan.runs, h.id);
+    tipEl.append(el('b', null, RUNK[r.k].n), el('span', null, fmtM(runLen(r)) + ', a ' + fmtNum(r.h, 2) + ' m da terra' + (r.circ ? '. ' + r.circ : '')));
+  }
+  const sr = stage.getBoundingClientRect();
+  tipEl.hidden = false;
+  const tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+  let x = e.clientX - sr.left + 16, y = e.clientY - sr.top + 16;
+  if (x + tw > sr.width - 8) x = e.clientX - sr.left - tw - 12;
+  if (y + th > sr.height - 8) y = e.clientY - sr.top - th - 12;
+  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+}
+canvas.addEventListener('pointerleave', () => { hideTip(); if (ghost){ ghost = null; overlayDirty = true; } });
 canvas.addEventListener('pointermove', e => {
+  hoverSys(e);
   if (mode === 'walk'){
     if (document.pointerLockElement === canvas){ look(e.movementX || 0, e.movementY || 0, 0.0022); return; }
     if (!dragging) return;
@@ -2393,6 +2934,7 @@ function frame(){
   if (mode === 'walk') walk(dt); else controls.update();
   if (needRebuild){ rebuild(); needRebuild = false; }
   if (overlayDirty){ drawOverlay(); overlayDirty = false; }
+  updSysSprites();
   if (editing){
     const ks = Math.max(.6, camera.position.distanceTo(controls.target) / 26);
     editG.children.forEach(o => { if (o.userData.handle) o.scale.set(ks, 1, ks); });
