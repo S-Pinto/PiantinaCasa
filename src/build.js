@@ -184,15 +184,15 @@ function buildRail(r){
 
 /* Ringhiera: corrimano, montanti, traverso e sbarre (le sbarre sono una texture con trasparenza) */
 const metalCache = {}, barMatCache = {};
-function metalMat(c){ return metalCache[c] || (metalCache[c] = mat(c, { roughness:.45, metalness:.35 })); }
+function metalMat(c){ return metalCache[c] || (metalCache[c] = mat(c, { roughness:.5, metalness:.15 })); }
 let barTexture = null;
 function barMat(c){
   if (!barTexture){
     const cv = document.createElement('canvas'); cv.width = 16; cv.height = 16;
-    const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(6, 0, 4, 16);
+    const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(6, 0, 3, 16);
     barTexture = toTex(cv);
   }
-  return barMatCache[c] || (barMatCache[c] = new THREE.MeshStandardMaterial({ color:c, map:barTexture, alphaTest:.5, side:THREE.DoubleSide, roughness:.45, metalness:.35 }));
+  return barMatCache[c] || (barMatCache[c] = new THREE.MeshStandardMaterial({ color:c, map:barTexture, alphaTest:.5, side:THREE.DoubleSide, roughness:.5, metalness:.15 }));
 }
 function buildFence(r, a, b, horiz){
   const h = clamp(r.h || 1.0, .4, 1.6), col = r.col || '#3b4048', base = clamp(r.base || 0, 0, h - 0.3);
@@ -200,16 +200,19 @@ function buildFence(r, a, b, horiz){
   const c = horiz ? a[1] : a[0];
   const lo = horiz ? Math.min(a[0],b[0]) : Math.min(a[1],b[1]), hi = horiz ? Math.max(a[0],b[0]) : Math.max(a[1],b[1]);
   if (hi - lo < 1) return;
+  /* muretto in cemento chiaro con copertina, come sul terrazzo vero; sopra la ringhiera zincata */
   if (base > 0){
-    const bt = 5, bw = flatMat(r.bcol || '#e6dcc9', .85);
-    if (horiz) box(lo - bt/2, hi + bt/2, c - bt/2, c + bt/2, 0, base, bw, floorsG, true, true);
-    else box(c - bt/2, c + bt/2, lo - bt/2, hi + bt/2, 0, base, bw, floorsG, true, true);
+    const bt = 6, bw = flatMat(r.bcol || '#e6dcc9', .85), cap = flatMat('#efe8da', .7);
+    const wall = (p,q,th,h0,h1,m) => horiz ? box(p,q,c-th/2,c+th/2,h0,h1,m,floorsG,true,true) : box(c-th/2,c+th/2,p,q,h0,h1,m,floorsG,true,true);
+    wall(lo - bt/2, hi + bt/2, bt, 0, base - 0.04, bw);
+    wall(lo - bt/2 - 0.5, hi + bt/2 + 0.5, bt + 1, base - 0.04, base, cap);
   }
   const put = (p,q,h0,h1,th) => horiz ? box(p,q,c-th/2,c+th/2,h0,h1,mm,floorsG,true,true) : box(c-th/2,c+th/2,p,q,h0,h1,mm,floorsG,true,true);
-  put(lo-1, hi+1, h-0.05, h, 2.4);      // corrimano
-  put(lo-1, hi+1, base + 0.06, base + 0.11, 1.6);     // traverso basso
-  const n = Math.max(1, Math.round((hi-lo)/30));
-  for (let k=0; k<=n; k++){ const q = lo + k*(hi-lo)/n; put(q-0.8, q+0.8, base, h, 1.6); }
+  put(lo-1, hi+1, h-0.05, h, 1.6);      // corrimano piatto
+  put(lo-1, hi+1, base + 0.06, base + 0.11, 0.8);     // traverso basso
+  /* montanti a piatto largo, circa ogni metro e mezzo */
+  const n = Math.max(1, Math.round((hi-lo)/38));
+  for (let k=0; k<=n; k++){ const q = lo + k*(hi-lo)/n; put(q-1.1, q+1.1, base, h, 0.5); }
   const lenM = (hi-lo)*S, ph = h - base - 0.16;
   const pg = new THREE.PlaneGeometry(lenM, ph), uv = pg.attributes.uv;
   for (let i=0; i<uv.count; i++) uv.setX(i, uv.getX(i) * lenM / 0.13);
