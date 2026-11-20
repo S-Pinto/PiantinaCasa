@@ -103,6 +103,97 @@
   <p class="hint" id="hint"></p>
   <div class="tip" id="tip" hidden=""></div>
 
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"></path></symbol>
+    <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M7 16a5 5 0 0 1 10 0"></path><path d="M3 16h18M6 20h12M12 4v4M4.9 8.9l1.4 1.4M19.1 8.9l-1.4 1.4"></path></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"></path></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></symbol>
+  </svg>
+
+  <div class="vtools glass" id="vtools" role="toolbar" aria-label="Luce, misure e panorama">
+    <button type="button" class="vt" id="btnAmb" aria-haspopup="true" aria-expanded="false" title="Luce: giorno, tramonto, notte">
+      <svg class="i" viewBox="0 0 24 24"><use href="#i-sun"></use></svg><span class="vl">Giorno</span></button>
+    <button type="button" class="vt" id="btnMis" aria-pressed="false" title="Misure della casa">
+      <svg class="i" viewBox="0 0 24 24"><path d="M3 15.5L15.5 3 21 8.5 8.5 21z"></path><path d="M7 12l2 2M10 9l1.5 1.5M13 6l2 2M8.5 15.5l0 0"></path></svg><span class="vl">Misure</span></button>
+    <button type="button" class="vt" id="btnRoof" aria-pressed="false" title="Mostra o nascondi il tetto">
+      <svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-6 9 6"></path><path d="M5 10v9h14v-9"></path><path d="M10 19v-5h4v5"></path></svg><span class="vl">Tetto</span></button>
+    <button type="button" class="vt" id="btnPano" aria-pressed="false" title="Panorama 3D">
+      <svg class="i" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9.5" ry="4.5"></ellipse><path d="M12 7.5c-2 1-3 2.6-3 4.5s1 3.5 3 4.5M12 7.5c2 1 3 2.6 3 4.5s-1 3.5-3 4.5"></path><path d="M18 4.5l1.5 1.5L18 7.5"></path></svg><span class="vl">Panorama</span></button>
+  </div>
+
+  <div class="apanel glass" id="apanel" hidden="">
+    <div class="segs tod" role="group" aria-label="Momento della giornata">
+      <button type="button" data-tod="giorno" aria-pressed="true"><svg class="i" viewBox="0 0 24 24"><use href="#i-sun"></use></svg>Giorno</button>
+      <button type="button" data-tod="tramonto" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><use href="#i-sunset"></use></svg>Tramonto</button>
+      <button type="button" data-tod="notte" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><use href="#i-moon"></use></svg>Notte</button>
+    </div>
+    <label class="arow"><span>Ora</span><output id="ambHour">13:00</output></label>
+    <input type="range" class="arange" id="ambRange" min="5" max="23.99" step="0.05" aria-label="Ora del giorno">
+    <p class="note" id="ambSunset" style="margin-top:2px"></p>
+    <p class="sl">Stagione</p>
+    <div class="segs" id="ambSeason" role="group" aria-label="Stagione">
+      <button type="button" data-season="inverno">Inverno</button>
+      <button type="button" data-season="mezza">Primavera</button>
+      <button type="button" data-season="estate">Estate</button>
+    </div>
+    <p class="sl">Luci di casa</p>
+    <div class="segs" id="ambLights" role="group" aria-label="Luci di casa">
+      <button type="button" data-lights="auto">Automatiche</button>
+      <button type="button" data-lights="on">Accese</button>
+      <button type="button" data-lights="off">Spente</button>
+    </div>
+    <p class="sl">Qualità grafica</p>
+    <div class="segs" id="ambQ" role="group" aria-label="Qualità grafica">
+      <button type="button" data-q="alta">Alta</button>
+      <button type="button" data-q="media">Media</button>
+      <button type="button" data-q="bassa">Leggera</button>
+    </div>
+    <p class="note">Alta aggiunge ombre morbide fra gli oggetti e il bagliore delle luci. Sul telefono parte da Media.</p>
+    <label class="arow"><span>Orientamento del nord</span><output id="ambNorthV">0°</output></label>
+    <input type="range" class="arange" id="ambNorth" min="-180" max="180" step="5" aria-label="Orientamento del nord">
+    <p class="note">Impostato a +25° come la freccia del nord della planimetria catastale: il balcone su Via Verona guarda a sud-sud-ovest. Con 0° il nord sarebbe in alto nella piantina.</p>
+  </div>
+
+  <aside class="mpanel glass" id="mpanel" data-collapsed="0" hidden="" aria-label="Misure">
+    <div class="shead">
+      <p class="pt">Misure</p>
+      <button type="button" class="ib sm" id="mcollapse" aria-label="Riduci" title="Riduci"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <button type="button" class="ib sm" id="mclose" aria-label="Nascondi le misure" title="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div class="mbody">
+      <div class="mtots">
+        <div><span class="k">Superficie interna</span><b id="mtot"></b></div>
+        <div><span class="k">Balconi e veranda</span><b id="mout"></b></div>
+        <div><span class="k">Altezza soffitti</span><b id="mh"></b></div>
+      </div>
+      <details class="mdet">
+        <summary>Stanze una per una (<span id="mcount"></span>)</summary>
+        <ul class="mlist" id="mlist"></ul>
+        <p class="note">Quote interne al netto dei muri; per le stanze non rettangolari solo la superficie.</p>
+      </details>
+      <div class="acts">
+        <button type="button" class="btn primary" id="mtape" aria-pressed="false">Misura una distanza</button>
+        <button type="button" class="btn" id="mclear">Cancella</button>
+      </div>
+      <p class="note" id="mtapehint" hidden="">Clicca o tocca due punti: muri, pavimento o arredi. Vedi la distanza in pianta e, se c’è, il dislivello.</p>
+    </div>
+  </aside>
+
+  <div class="panoui" id="panoui" hidden="">
+    <div class="pbar glass">
+      <button type="button" class="ib" data-tod="giorno" aria-pressed="true" title="Giorno"><svg class="i" viewBox="0 0 24 24"><use href="#i-sun"></use></svg><span class="lbl">Giorno</span></button>
+      <button type="button" class="ib" data-tod="tramonto" aria-pressed="false" title="Tramonto"><svg class="i" viewBox="0 0 24 24"><use href="#i-sunset"></use></svg><span class="lbl">Tramonto</span></button>
+      <button type="button" class="ib" data-tod="notte" aria-pressed="false" title="Notte"><svg class="i" viewBox="0 0 24 24"><use href="#i-moon"></use></svg><span class="lbl">Notte</span></button>
+      <span class="psep"></span>
+      <button type="button" class="ib" id="panoRoof" aria-pressed="false" title="Tetto"><svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-6 9 6"></path><path d="M5 10v9h14v-9"></path><path d="M10 19v-5h4v5"></path></svg><span class="lbl">Tetto</span></button>
+      <button type="button" class="ib" id="panoPlay" aria-label="Ferma la rotazione" title="Rotazione"><svg class="i" viewBox="0 0 24 24"><use href="#i-pause"></use></svg></button>
+      <button type="button" class="ib" id="panoPhoto" title="Salva una foto"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"></path><circle cx="12" cy="13" r="3.5"></circle></svg><span class="lbl">Foto</span></button>
+      <button type="button" class="ib" id="panoExit" aria-label="Esci dal panorama" title="Esci"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <p class="ptitle">Via Verona <span>· attico al 7° piano</span></p>
+  </div>
+
   <div id="dlg" hidden="">
     <div class="box glass" role="dialog" aria-modal="true" aria-labelledby="dlgt">
       <h2 id="dlgt">Dati della piantina</h2>

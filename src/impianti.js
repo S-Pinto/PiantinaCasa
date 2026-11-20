@@ -85,11 +85,11 @@ function glyphTex(text, col){
   g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.font = '700 ' + (text.length >= 3 ? 37 : text.length === 2 ? 50 : 64) + 'px Figtree, system-ui, sans-serif';
   g.fillText(text, 64, 68);
-  const t = new THREE.CanvasTexture(cv); t.anisotropy = 4;
+  const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
   return glyphCache[k] = t;
 }
 function sysSprite(t){
-  const m = sprCache[t] || (sprCache[t] = new THREE.SpriteMaterial({ map:glyphTex(SYS[t].g, sysColor(t)), depthTest:false, depthWrite:false, transparent:true, sizeAttenuation:false }));
+  const m = sprCache[t] || (sprCache[t] = new THREE.SpriteMaterial({ map:glyphTex(SYS[t].g, sysColor(t)), depthTest:false, depthWrite:false, transparent:true, sizeAttenuation:false, toneMapped:false }));
   m.depthTest = sysWalkDepth;
   const sp = new THREE.Sprite(m); sp.scale.set(sprK, sprK, 1); sp.renderOrder = 12; sysSprites.push(sp); return sp;
 }
@@ -108,7 +108,7 @@ function updSysSprites(){
     Object.keys(runMatCache).forEach(k => { runMatCache[k].depthTest = wd; });
   }
 }
-function runMat(c){ const m = runMatCache[c] || (runMatCache[c] = new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.92, depthTest:false, depthWrite:false })); m.depthTest = sysWalkDepth; return m; }
+function runMat(c){ const m = runMatCache[c] || (runMatCache[c] = new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.92, depthTest:false, depthWrite:false, toneMapped:false })); m.depthTest = sysWalkDepth; return m; }
 function buildSys(o){
   const d = SYS[o.t]; if (!d) return;
   const g = new THREE.Group(), col = sysColor(o.t), body = d.b || '#f4f4f2';
@@ -467,7 +467,7 @@ function sysOverlay(it){
   }
   if (ghost && st.tool === 'sys' && !st.drag){
     const d = SYS[ghost.t];
-    const sm = new THREE.SpriteMaterial({ map:glyphTex(d.g, sysColor(ghost.t)), depthTest:false, depthWrite:false, transparent:true, opacity:.6, sizeAttenuation:false });
+    const sm = new THREE.SpriteMaterial({ map:glyphTex(d.g, sysColor(ghost.t)), depthTest:false, depthWrite:false, transparent:true, opacity:.6, sizeAttenuation:false, toneMapped:false });
     const sp = new THREE.Sprite(sm); sp.scale.set(sprK*1.15, sprK*1.15, 1); sp.renderOrder = 32;
     sp.position.set(X(ghost.x), .5, Z(ghost.y)); editG.add(sp);
     ovBox(ghost.x - 2.5, ghost.x + 2.5, ghost.y - 2.5, ghost.y + 2.5, 0, .1, ghost.wall ? ORG : ACC, .9);

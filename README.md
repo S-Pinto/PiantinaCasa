@@ -1,6 +1,6 @@
 # PiantinaCasa
 
-Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate, impianti elettrico, idraulico e domotico con elenco quantità.
+Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate, impianti elettrico, idraulico e domotico con elenco quantità. Luce del giorno, del tramonto e della notte con il sole nella posizione vera, misure delle stanze, metro, tetto da mostrare o nascondere, e un Panorama 3D a tutto schermo con il palazzo e il quartiere attorno.
 
 ## Come aprirla
 
@@ -45,8 +45,19 @@ tools/              strumenti per chi sviluppa
 | `variants.js` | menu opzioni e pannello delle versioni di arredo |
 | `impianti.js` | impianti elettrico, idraulico e domotica: catalogo, livelli, aggancio ai muri, elenco quantità |
 | `storage.js` | salvataggi, import/export, file HTML da inviare |
+| `ambiente.js` | ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione |
+| `contesto.js` | il palazzo sotto l’attico, le unità vicine, strade, alberi e palazzine del quartiere |
+| `tetto.js` | il tetto dell’attico (solaio a quadrotti, muretto, vano scala), da mostrare o nascondere |
+| `misure.js` | quote interne delle stanze, superfici, ingombro totale, metro a due punti |
+| `panorama.js` | Panorama 3D: vista cinematografica a tutto schermo, foto in PNG |
 
 three.js (r187) arriva dalla CDN jsDelivr tramite la *import map* in `index.html`.
+
+### Luce e qualità
+
+Il pulsante **Luce** (a destra) sceglie giorno, tramonto o notte, oppure un’ora precisa con il cursore, e la stagione. Il sole segue il percorso vero per la latitudine di Brindisi. Il nord è a +25° rispetto all’alto della piantina, come indica la freccia della planimetria catastale (il balcone su Via Verona guarda a sud-sud-ovest); si può correggere con **Orientamento del nord**. Di notte si accendono le luci delle stanze e le finestre del quartiere.
+
+Colori e luci sono fisicamente corretti (gestione del colore attiva, tone mapping *Khronos PBR Neutral*, che non altera i colori di pavimenti e finiture). La **qualità grafica** ha tre livelli: *Alta* aggiunge occlusione ambientale (GTAO), bagliore delle luci e ombre delle lampade; *Media* (predefinita sul telefono) tiene le ombre del sole; *Leggera* abbassa la risoluzione. Le ombre si ricalcolano solo quando la scena cambia, quindi da ferma la piantina non consuma batteria per le ombre.
 
 ### Il modello della casa
 

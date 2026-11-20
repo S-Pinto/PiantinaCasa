@@ -4,27 +4,31 @@ import { $ } from './core.js';
 /* Renderer, scena, camera, luci e gruppi di oggetti. */
 
 const canvas = $('c'), stage = $('stage');
-/* Colori come in three r128: i valori esadecimali sono usati così come sono (niente conversione sRGB → lineare)
-   e le luci hanno le intensità di allora (moltiplicate per π con l’illuminazione fisica attuale). */
-THREE.ColorManagement.enabled = false;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+/* Colori e luci fisicamente corretti: i colori esadecimali sono in sRGB, il calcolo avviene in lineare,
+   il tone mapping (Khronos PBR Neutral) comprime le alte luci come una macchina fotografica. Luci, cielo e ombre
+   cambiano con l’ora del giorno in ambiente.js. */
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, powerPreference:'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NeutralToneMapping;   /* conserva i colori veri di pavimenti e finiture */
+renderer.toneMappingExposure = 1;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.autoUpdate = false;     /* la casa è ferma: ricalcolo le ombre solo quando cambia qualcosa */
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.2, 400);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.2, 420);
 camera.rotation.order = 'YXZ';
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8794a1, 0.8 * Math.PI));
-const sun = new THREE.DirectionalLight(0xffffff, 0.85 * Math.PI);
+const hemi = new THREE.HemisphereLight(0xdfe9f5, 0x6f675c, 0.6);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 3);
 sun.position.set(9, 21, 13);
 sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096);
-const sc = sun.shadow.camera; sc.left=-26; sc.right=26; sc.top=14; sc.bottom=-14; sc.near=1; sc.far=80;
-sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
-scene.add(sun);
+const sc = sun.shadow.camera; sc.left=-17; sc.right=17; sc.top=17; sc.bottom=-17; sc.near=1; sc.far=90;
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.025; sun.shadow.radius = 3;
+scene.add(sun, sun.target);
 
 const staticG = new THREE.Group();   // base, strada, scale (non modificabili)
 /* Pavimenti e parapetti (f), pareti, serramenti, porte e colonne (w), arredi (u) */
@@ -47,4 +51,4 @@ function resize(){
 /* nel confronto le due versioni stanno una sopra l’altra se lo schermo è verticale */
 function cmpVertical(){ return stage.clientHeight > stage.clientWidth * 1.1; }
 
-export { CMPG, MAING, camera, canvas, cmpVertical, editG, labelsG, renderer, resize, scene, stage, staticG };
+export { CMPG, MAING, camera, canvas, cmpVertical, editG, hemi, labelsG, renderer, resize, scene, stage, staticG, sun };

@@ -8,6 +8,11 @@ import { walk, walkPointerDown, walkPointerMove, walkPointerUp } from './walk.js
 import { buildDock, editorDown, editorMove, editorUp, histBtns } from './editor.js';
 import { drawOverlay } from './overlay.js';
 import { initArtifact, initFileUi, initStorage } from './storage.js';
+import { amb, ambFrame, initAmbiente, renderView } from './ambiente.js';
+import { contextFrame } from './contesto.js';
+import { initRoof, roofFrame } from './tetto.js';
+import { measFrame } from './misure.js';
+import { initPano } from './panorama.js';
 import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
 
 /* Punto di ingresso: carica la piantina, collega il puntatore e fa girare il ciclo di render. */
@@ -47,6 +52,7 @@ canvas.addEventListener('pointercancel', e => { walkPointerUp(); editorUp(e, tru
 
 /* ------------------------- Ciclo di render ------------------------- */
 
+const vtoolsEl = $('vtools');
 const timer = new THREE.Timer();
 timer.connect(document);      /* niente salto di tempo quando la scheda torna visibile */
 function ease(t){ return t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
@@ -72,7 +78,12 @@ function frame(time){
   if (Math.abs(cur - st.lowTarget) > 0.002) walls.scale.y = cur + (st.lowTarget - cur) * Math.min(1, dt*8);
   else walls.scale.y = st.lowTarget;
   CMPG.w.scale.y = walls.scale.y;
-  if (st.cmpId) renderSplit(); else renderer.render(scene, camera);
+  ambFrame(dt);
+  contextFrame(amb.context);
+  roofFrame();
+  measFrame();
+  vtoolsEl.hidden = st.editing;
+  if (st.cmpId) renderSplit(); else renderView();
   requestAnimationFrame(frame);
 }
 
@@ -112,6 +123,9 @@ function start(){
   controls.target.copy(preset('orbit').tgt);
   st.tween = null; controls.update();
   histBtns();
+  initAmbiente();
+  initPano();
+  initRoof();
   frame();
   initStorage();
   initArtifact();

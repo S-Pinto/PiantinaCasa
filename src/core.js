@@ -7,7 +7,7 @@
 /* Misure: tutto è espresso in pixel della piantina originale (x a destra, y in basso, nord in alto).
    1 px = 4 cm. */
 const S = 0.04, CX = 366, CY = 195;
-const H = 2.7, SILL = 0.9, HEAD = 2.1;
+const H = 3.0, SILL = 0.9, HEAD = 2.1;      /* altezza dei soffitti dalla planimetria catastale: 3,00 m */
 const X = px => (px - CX) * S;
 const Z = py => (py - CY) * S;
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -49,7 +49,10 @@ const st = {
   lowTarget: 1, showFurn: true, furnType: 'divano',
   viewOnlyFile: false, publishedTs: 0, publishedJson: '',
   planKey: '',           // identifica la piantina pubblicata (per i salvataggi locali)
-  artifactApi: null      // null = non ancora noto, false = non disponibile
+  artifactApi: null,     // null = non ancora noto, false = non disponibile
+  rev: 0,                // cresce a ogni ricostruzione della scena
+  shadowDirty: true,     // le ombre vanno ricalcolate al prossimo fotogramma
+  pano: false            // Panorama 3D attivo
 };
 
 export { $, CX, CY, H, HEAD, S, SILL, X, Z, byId, clamp, clone, isRectPts, pointInPoly, polyArea, segDist, st };
