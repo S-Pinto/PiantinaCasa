@@ -159,14 +159,14 @@ function buildContext(){
   block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false });
   /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
      arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
-  const coreX = (X(297) + X(396)) / 2;
-  const wx0 = coreX - 7, wx1 = coreX + 7, wz0 = north - 30;
+  /* parte dal lato ovest del vano scala e va verso est: la vetrata della cucina guarda nel vuoto */
+  const wx0 = X(297) - 0.2, wx1 = X(297) + 9, wz0 = north - 30;
   block(wx0, wx1, wz0, north, GROUND_Y, -0.04, { south:false, roof:false });
   roof(wx0, wx1, wz0, north, -0.04, false);
   plainBox(wx0, wx1, wz0, wz0 + 0.25, -0.04, 0.9, whiteMat);
   plainBox(wx0, wx0 + 0.25, wz0, north, -0.04, 0.9, whiteMat);
   plainBox(wx1 - 0.25, wx1, wz0, north, -0.04, 0.9, whiteMat);
-  roofBox(coreX + 2, north - 24, 5, 4, -0.04);
+  roofBox(wx1 - 3.5, north - 24, 5, 4, -0.04);
   /* corpi scala che sporgono sulla facciata dei balconi */
   [xW + 12, -32, 30, xE - 12].forEach(cx => {
     const t = facadeMat(texWin, 4, -0.42 - GROUND_Y);
