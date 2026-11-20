@@ -26,7 +26,7 @@ function normalize(p){
     out.walls.push({ id:w.id || uid(), x1:Math.min(x1,x2), y1:Math.min(y1,y2), x2:Math.max(x1,x2), y2:Math.max(y1,y2),
       k:w.k === 'e' ? 'e' : 'i', col:okCol(w.col), tx:okTex(w.tx), sa:normSide(w.sa), sb:normSide(w.sb),
       ops:(w.ops || []).filter(o => num(o.p) && num(o.w)).map(o => ({ p:o.p, w:Math.max(6,o.w), col:okCol(o.col),
-        t:['door','win','pf','open'].indexOf(o.t) >= 0 ? o.t : 'door', s:o.s === -1 ? -1 : 1,
+        t:['door','win','pf','open','lift'].indexOf(o.t) >= 0 ? o.t : 'door', s:o.s === -1 ? -1 : 1,
         n:num(o.n) && o.n >= 1 ? clamp(Math.round(o.n), 1, 24) : undefined })) });
   });
   (p.columns || []).forEach(c => {

@@ -152,7 +152,7 @@ function refreshProps(){
   } else if (it.type === 'op'){
     const w = it.wall, o = it.op, h = isH(w);
     title.textContent = { door:'Porta', win:'Finestra', pf:'Porta-finestra', open:'Varco' }[o.t];
-    add(fld('Tipo', selIn([['door','Porta'],['win','Finestra'],['pf','Porta-finestra'],['open','Varco']], o.t, v => mutate(() => { o.t = v; }))));
+    add(fld('Tipo', selIn([['door','Porta'],['win','Finestra'],['pf','Porta-finestra'],['open','Varco'],['lift','Porta ascensore']], o.t, v => mutate(() => { o.t = v; }))));
     add(fld('Larghezza (m)', numIn(o.w * S, .05, .2, v => mutate(() => {
       const a = h ? w.x1 : w.y1, b = h ? w.x2 : w.y2, nw = clamp(v/S, 6, b - a);
       o.w = nw; o.p = clamp(o.p, a + nw/2, b - nw/2);

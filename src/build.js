@@ -53,6 +53,8 @@ function clearGroup(g, disposeMats){
   }
 }
 
+const liftMat = mat('#d6dadf', { roughness:.32, metalness:.35 }), liftFrame = mat('#8e959c', { roughness:.4, metalness:.35 });
+
 /* ------------------------- Costruzione della scena dal modello ------------------------- */
 function buildFloor(f){
   const m = FLOORS[f.m] || FLOORS.parquet;
@@ -135,6 +137,17 @@ function buildWall(w, wi){
     if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD, paneCount(o)); }
     else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD, paneCount(o)); }
     else if (o.t === 'door'){ lintel(o.lo, o.hi, HEAD, H); leaf(o); }
+    else if (o.t === 'lift'){
+      /* porta dell'ascensore: due ante d'acciaio scorrevoli, chiuse, con cornice e pulsantiera */
+      const lh = 2.1, fw = 1.6;
+      lintel(o.lo, o.hi, lh, H);
+      part(o.lo, o.hi, 0, lh, 2.4, liftMat, true);
+      part(o.lo, o.lo + fw, 0, lh + 0.06, t + 1.2, liftFrame, false);
+      part(o.hi - fw, o.hi, 0, lh + 0.06, t + 1.2, liftFrame, false);
+      part(o.lo, o.hi, lh, lh + 0.06, t + 1.2, liftFrame, false);
+      const m = (o.lo + o.hi) / 2; part(m - 0.12, m + 0.12, 0.02, lh, 2.6, liftFrame, false);
+      const bx = o.hi + 2.2; if (bx + 1.5 < b) part(bx, bx + 1.5, 1.0, 1.3, t + 0.8, liftFrame, false);
+    }
     else { lintel(o.lo, o.hi, HEAD, H); }
   });
   solidPiece(cur, b + t/2 + 0.04, 0, H);
@@ -321,13 +334,54 @@ function buildCmp(){
 /* Elementi fissi: base, strada, scale */
 const plate = box(-130,830,20,450,-0.4,-0.02,mat('#d7dee4'),staticG,false,true);
 const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true);
+/* Scala del vano: a U con i gradini a ventaglio nei due angoli (quasi a chiocciola),
+   pianerottolo davanti all'ascensore e alla porta d'ingresso, pianerottolo d'arrivo in alto */
+function stairStep(pts, top){
+  const sh = new THREE.Shape();
+  pts.forEach((p, i) => { const x = X(p[0]), y = -Z(p[1]); if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y); });
+  const g = new THREE.ExtrudeGeometry(sh, { depth:top, bevelEnabled:false }); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, stairMat); m.castShadow = m.receiveShadow = true;
+  staticG.add(m);
+}
+/* spicchio di un angolo: dal perno P fra gli angoli a0 e a1 (gradi, 0 = est, 90 = sud), dentro il rettangolo r */
+function winder(P, r, a0, a1, top){
+  const hit = a => {
+    const dx = Math.cos(a * Math.PI / 180), dy = Math.sin(a * Math.PI / 180);
+    let t = Infinity;
+    if (dx > 1e-6) t = Math.min(t, (r[1] - P[0]) / dx); if (dx < -1e-6) t = Math.min(t, (r[0] - P[0]) / dx);
+    if (dy > 1e-6) t = Math.min(t, (r[3] - P[1]) / dy); if (dy < -1e-6) t = Math.min(t, (r[2] - P[1]) / dy);
+    return [P[0] + dx * t, P[1] + dy * t];
+  };
+  const pts = [P, hit(a0)];
+  [[r[0], r[2]], [r[1], r[2]], [r[1], r[3]], [r[0], r[3]]].forEach(c => {
+    let ang = Math.atan2(c[1] - P[1], c[0] - P[0]) * 180 / Math.PI; if (ang < a0 - 1e-6) ang += 360;
+    if (ang > a0 + 1e-6 && ang < a1 - 1e-6) pts.push([c, ang]);
+  });
+  const mid = pts.slice(2).sort((p, q) => p[1] - q[1]).map(p => p[0]);
+  stairStep([P, pts[1], ...mid, hit(a1)], top);
+}
 (function stairs(){
-  const rise = 0.17, n = 8, d = 11;
-  for (let i=0;i<n;i++) box(303,333, 133-(i+1)*d, 133-i*d, 0,(i+1)*rise, stairMat, staticG);
-  for (let i=0;i<n;i++) box(354,388, 45+i*d, 45+(i+1)*d, 0, n*rise+(i+1)*rise, stairMat, staticG);
-  box(303,388,42,45,0,n*rise,stairMat,staticG);
-  collide(303,333,45,133,staticColliders);
-  collide(354,388,42,133,staticColliders);
+  const N = 18, rise = H / N, yTurn = 72, yLow = 133;
+  let k = 0;
+  const top = () => (++k) * rise;
+  /* rampa ovest, si sale verso nord */
+  const tw = (yLow - yTurn) / 6;
+  for (let i = 0; i < 6; i++) box(303, 333, yLow - (i + 1) * tw, yLow - i * tw, 0, top(), stairMat, staticG);
+  /* primo angolo: tre gradini a ventaglio attorno allo spigolo interno */
+  for (let i = 0; i < 3; i++) winder([333, yTurn], [303, 333, 42, yTurn], 180 + i * 30, 210 + i * 30, top());
+  /* gradino dritto lungo il muro nord */
+  box(333, 354, 42, yTurn, 0, top(), stairMat, staticG);
+  /* secondo angolo */
+  for (let i = 0; i < 3; i++) winder([354, yTurn], [354, 388, 42, yTurn], 270 + i * 30, 300 + i * 30, top());
+  /* rampa est, si sale verso sud, fino al pianerottolo d'arrivo */
+  const te = 10.2;
+  for (let i = 0; i < 4; i++) box(354, 388, yTurn + i * te, yTurn + (i + 1) * te, 0, top(), stairMat, staticG);
+  box(354, 388, yTurn + 4 * te, yLow, 0, H - 0.02, stairMat, staticG);
+  /* parapetto pieno che chiude il pozzo fra le due rampe */
+  box(336, 351, yTurn, yLow, 0, H * 0.55, stairMat, staticG);
+  collide(303, 333, yTurn, yLow, staticColliders);
+  collide(303, 388, 42, yTurn, staticColliders);
+  collide(336, 388, yTurn, yLow, staticColliders);
 })();
 plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
 mergeStatic(staticG);
