@@ -203,7 +203,7 @@ function makeHerringbone(){
   const g = cv.getContext('2d'), r = rng(211);
   g.fillStyle = '#1d0a05'; g.fillRect(0,0,N,N);
   const strip = (cx, cy, w, h) => {
-    const col = 'hsl(' + (12 + r()*4) + ',' + (74 + r()*8) + '%,' + (22 + r()*4) + '%)';
+    const col = 'hsl(' + (13 + r()*6) + ',' + (60 + r()*12) + '%,' + (23 + r()*6) + '%)';
     for (const dx of [-8, 0, 8]) for (const dy of [-8, 0, 8]){
       const x = (cx + dx) * C, y = (cy + dy) * C;
       if (x > N || y > N || x + w*C < 0 || y + h*C < 0) continue;

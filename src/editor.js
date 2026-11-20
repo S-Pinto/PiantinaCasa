@@ -56,7 +56,9 @@ const TIPS = {
   run:'Scegli il tipo di linea e trascina sulla pianta per tracciare un tratto. Puoi tracciarne quanti vuoi, uno dopo l’altro.'
 };
 /* arredi che si appoggiano al muro con lo schienale (si girano da soli quando li avvicini a un muro) */
-const WALLBACK = new Set(['divano','mobiletv','libreria','vetrina','cucina','pensile','frigo','lavatrice','letto2','letto1','comodino','armadio','cassettiera','scrivania','lavabo','wc','bidet','vasca']);
+const WALLBACK = new Set(['divano','mobiletv','libreria','vetrina','cucina','pensile','frigo','lavatrice','letto2','letto1','comodino','armadio','cassettiera','scrivania','lavabo','wc','bidet','vasca',
+  'tvparete','colonnaforno','mobilealto','cassettone','scaffale','lavabososp','specchio','postazionepc','listelli','mensoleled','gradinigatto','tende',
+  'quadri','armadiospecchi','paretetv','mobileled','pensilevetro','barbecue','scaffalescala','ledparete']);
 
 /* ---------- puntatore sulla pianta ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), gplane = new THREE.Plane(new THREE.Vector3(0,1,0),0), hitV = new THREE.Vector3();
