@@ -8,6 +8,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" id="appcss" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f5f8b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script type="importmap">
 {
   "imports": {
@@ -51,6 +60,10 @@
     <label class="mrow"><span>Nomi delle stanze</span><input type="checkbox" id="optLabels" checked=""></label>
     <label class="mrow"><span>Pareti basse</span><input type="checkbox" id="optLow"></label>
     <label class="mrow"><span>Mostra gli arredi</span><input type="checkbox" id="optFurn" checked=""></label>
+    <div id="pwabox" hidden="" style="padding:12px 0 6px;border-bottom:1px solid var(--line)">
+      <button type="button" class="btn primary" id="pwaInstall" style="width:100%" hidden="">Installa come app</button>
+      <p class="note" id="pwaNote" style="margin-top:8px"></p>
+    </div>
     <div id="dlbox" style="padding:12px 0 6px;border-bottom:1px solid var(--line)">
       <button type="button" class="btn primary" id="dlfile" style="width:100%">Scarica il file HTML</button>
       <label class="opt" style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13.5px;cursor:pointer"><input type="checkbox" id="optViewOnly" style="width:20px;height:20px;margin:0;accent-color:var(--accent)"> <span>Solo da guardare, senza gli strumenti di modifica</span></label>

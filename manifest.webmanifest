@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "Casa di Via Verona, piantina 3D",
+  "short_name": "Casa",
+  "description": "Piantina 3D dell’appartamento di Via Verona: arredi, versioni da confrontare, impianti, luce del giorno.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#151c24",
+  "theme_color": "#1f5f8b",
+  "categories": ["lifestyle", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
