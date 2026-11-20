@@ -4,6 +4,7 @@ import { el } from './dom.js';
 import { MAING, camera, canvas, scene } from './scene.js';
 import { isH, wallT } from './model.js';
 import { railThick } from './build.js';
+import { controls } from './views.js';
 
 /* Misure: quote interne delle stanze (luce netta fra i muri), superfici, ingombro totale della casa,
    e un metro per misurare a mano fra due punti qualsiasi (muri, pavimento, arredi). */
@@ -11,7 +12,7 @@ import { railThick } from './build.js';
 const measG = new THREE.Group(), tapeG = new THREE.Group();
 measG.renderOrder = 10;
 scene.add(measG, tapeG);
-let measOn = false, measRev = -1, measNames = null, tapeOn = false, tapeA = null;
+let measOn = false, measRev = -1, tapeOn = false, tapeA = null;
 
 const misFmtM = v => v.toFixed(2).replace('.', ',') + ' m';
 const misFmtA = v => v.toFixed(1).replace('.', ',') + ' m²';
@@ -198,12 +199,11 @@ function wallDims(r, y, full){
 
 let selRoom = null, allWalls = false;
 function buildMeasures(){
-  measRev = st.rev; measNames = st.namesOn;
+  measRev = st.rev;
   measG.children.slice().forEach(o => { measG.remove(o); if (o.geometry) o.geometry.dispose(); if (o.material && o.material.isSpriteMaterial) o.material.dispose(); });
   const y = 0.12, rooms = roomInfo();
   const sel = selRoom && rooms.find(r => r.f.id === selRoom);
   if (!sel) selRoom = null;
-  st.measSel = measOn && (!!sel || allWalls);
   rooms.forEach(r => {
     const f = r.f;
     if (sel && r !== sel) return;
@@ -218,8 +218,7 @@ function buildMeasures(){
         dimLine(measG, X(xq), Z(d.lo), X(xq), Z(d.hi), y, 'dim', misFmtM(d.len));
       }
     }
-    /* la superficie va sotto il nome della stanza (se i nomi in 3D sono accesi la mostrano già loro) */
-    if (st.namesOn && !sel) return;
+    /* la superficie va sotto il nome della stanza (con le misure accese i nomi in 3D si spengono) */
     const lab = st.plan.labels.find(l => !l.g && pointInPoly(l.x, l.y, f.pts));
     const ax = lab ? lab.x : cx, ay = lab ? lab.y + 13 : cy;
     const s = textSprite(misFmtA(r.net), 'area'); s.position.set(X(ax), y, Z(ay)); measG.add(s);
@@ -244,7 +243,29 @@ function buildMeasures(){
 const mpanel = $('mpanel'), btnMis = $('btnMis');
 function selectRoom(id){
   selRoom = id; buildMeasures();
-  if (id){ $('mroom').scrollIntoView({ block:'nearest' }); }
+  if (id){ $('mroom').scrollIntoView({ block:'nearest' }); const f = st.plan.floors.find(q => q.id === id); if (f) frameRoom(f); }
+}
+/* inquadro la stanza dall’alto nella parte di vista che il pannello lascia libera (a destra, o sopra sul telefono) */
+function frameRoom(f){
+  if (st.mode === 'walk' || st.cmpId) return;
+  const xs = f.pts.map(p => X(p[0])), zs = f.pts.map(p => Z(p[1]));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  const cr = canvas.getBoundingClientRect(), W = cr.width || 1, Hh = cr.height || 1;
+  let fx0 = 0, fx1 = W, fy0 = 64, fy1 = Hh - 40;
+  if (!mpanel.hidden){
+    const pr = mpanel.getBoundingClientRect();
+    if (pr.width < W * 0.6) fx0 = Math.max(fx0, pr.right - cr.left + 8);
+    else fy1 = Math.min(fy1, pr.top - cr.top - 8);
+  }
+  const vt = $('vtools'); if (vt && !vt.hidden){ const vr = vt.getBoundingClientRect(); if (vr.width) fx1 = Math.min(fx1, vr.left - cr.left - 8); }
+  const fw = Math.max(80, fx1 - fx0), fh = Math.max(80, fy1 - fy0);
+  const t = Math.tan(camera.fov * Math.PI / 360), m = 1.5;     /* margine attorno alla stanza, per le quote */
+  const D = Math.max(6, ((z1 - z0) * m * 1.25) / (2 * t) * Hh / fh, ((x1 - x0) * m) / (2 * t) * Hh / fw);
+  const wpp = 2 * D * t / Hh;
+  const dx = (fx0 + fx1) / 2 - W / 2, dy = (fy0 + fy1) / 2 - Hh / 2;
+  const tt = new THREE.Vector3((x0 + x1) / 2 - dx * wpp, 0, (z0 + z1) / 2 - dy * wpp * 1.1);
+  const tp = tt.clone().add(new THREE.Vector3(0, 1, 0.42).normalize().multiplyScalar(D));
+  st.tween = { t:0, dur:.8, fp:camera.position.clone(), ft:controls.target.clone(), tp, tt };
 }
 function fillPanel(rooms, sel){
   const list = $('mlist'); list.textContent = '';
@@ -286,11 +307,10 @@ function fillPanel(rooms, sel){
   if (open) wl.append(el('li', 'note', open === 1 ? 'Un lato è aperto verso la stanza accanto.' : open + ' lati sono aperti verso le stanze accanto.'));
 }
 function setMeasures(on){
-  measOn = on;
+  measOn = on; st.measOn = on;
   btnMis.setAttribute('aria-pressed', String(on));
   mpanel.hidden = !on;
   if (!on) setTape(false);
-  st.measSel = on && (!!selRoom || allWalls);
   if (on && measRev !== st.rev) buildMeasures();
 }
 btnMis.addEventListener('click', () => setMeasures(!measOn));
@@ -360,7 +380,7 @@ function measFrame(){
   if (st.editing && measOn) setMeasures(false);      /* in modifica il pannello coprirebbe gli strumenti */
   const vis = st.mode !== 'walk';
   measG.visible = measOn && vis; tapeG.visible = vis;
-  if (measOn && (measRev !== st.rev || measNames !== st.namesOn)) buildMeasures();
+  if (measOn && measRev !== st.rev) buildMeasures();
 }
 
 export { SKIP, boundSegs, measFrame, misFmtA, roomWalls };

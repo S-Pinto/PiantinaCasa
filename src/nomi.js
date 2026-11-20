@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { $, H, S, X, Z, pointInPoly, polyArea, st } from './core.js';
-import { labelsG, scene } from './scene.js';
+import { camera, canvas, labelsG, scene } from './scene.js';
 import { SKIP, boundSegs, misFmtA, roomWalls } from './misure.js';
 
 /* Nomi delle stanze in 3D: un cartellino quasi trasparente sospeso sopra ogni stanza, sempre rivolto verso chi guarda,
@@ -63,25 +63,58 @@ function roomTags(){
   return tags.filter(t => t.floors.length || t.l).map(t => {
     const f = t.floors[0], lt = t.l ? t.l.text.trim() : '';
     const name = (!lt || (/\.$/.test(lt) && f)) ? (f ? f.name : lt) : lt;
-    return { name, x:t.x, y:t.y, sub:t.area ? misFmtA(t.area) : '' };
+    return { name, x:t.x, y:t.y, area:t.area, sub:t.area ? misFmtA(t.area) : '' };
   });
 }
 
+/* ogni cartellino: due versioni (nome + m², solo nome), linea guida e piedino; la più grande ha la precedenza */
+let tagItems = [];
 function buildNames(){
-  namesRev = st.rev;
+  namesRev = st.rev; namesSizeKey = '';
   namesG.children.slice().forEach(o => { namesG.remove(o); if (o.isLine) o.geometry.dispose(); if (o.isSprite) o.material.dispose(); });
-  roomTags().forEach(t => {
-    const tx = nameTexture(t.name, t.sub);
-    const m = new THREE.SpriteMaterial({ map:tx, transparent:true, opacity:.96, depthTest:false, depthWrite:false, sizeAttenuation:false, toneMapped:false });
-    const s = new THREE.Sprite(m);
-    const hh = 0.00062 * tx.userData.h / 2;      /* altezza costante sullo schermo */
-    s.scale.set(hh * tx.userData.aspect, hh, 1);
-    s.center.set(0.5, 0);
-    s.position.set(X(t.x), NAME_Y, Z(t.y)); s.renderOrder = 9;
-    namesG.add(s);
+  tagItems = roomTags().sort((a, b) => b.area - a.area).map(t => {
+    const mk = sub => {
+      const tx = nameTexture(t.name, sub);
+      const m = new THREE.SpriteMaterial({ map:tx, transparent:true, opacity:.96, depthTest:false, depthWrite:false, sizeAttenuation:false, toneMapped:false });
+      const s = new THREE.Sprite(m); s.center.set(0.5, 0); s.position.set(X(t.x), NAME_Y, Z(t.y)); s.renderOrder = 9; s.userData.tex = tx;
+      namesG.add(s); return s;
+    };
+    const full = mk(t.sub), short = mk('');
     const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(X(t.x), 0.1, Z(t.y)), new THREE.Vector3(X(t.x), NAME_Y, Z(t.y))]);
     const l = new THREE.Line(g, leaderMat); l.renderOrder = 8; namesG.add(l);
     const d = new THREE.Mesh(footGeo, footMat); d.position.set(X(t.x), 0.1, Z(t.y)); d.renderOrder = 8; namesG.add(d);
+    return { full, short, l, d, anchor:new THREE.Vector3(X(t.x), NAME_Y, Z(t.y)) };
+  });
+}
+
+/* dimensione in pixel che dipende dallo schermo: sul telefono cartellini più piccoli e, se lo spazio è poco, senza m².
+   Poi, dal più grande al più piccolo, salto quelli che coprirebbero un cartellino già messo. */
+let namesSizeKey = '';
+const tagNdc = new THREE.Vector3();
+function layoutNames(){
+  const W = canvas.clientWidth || 1, Hh = canvas.clientHeight || 1;
+  const small = W < 600, rowPx = small ? 13 : 17;       /* altezza della riga del nome, in pixel */
+  const key = W + 'x' + Hh;
+  if (key !== namesSizeKey){
+    namesSizeKey = key;
+    tagItems.forEach(it => [it.full, it.short].forEach(s => {
+      const tx = s.userData.tex, px = rowPx * tx.userData.h / 60;      /* 60 = riga del nome nella texture (disegnata al doppio) */
+      const k = px / Hh * 2 * Math.tan(camera.fov * Math.PI / 360);     /* sizeAttenuation:false: scala in unità a distanza 1 */
+      s.scale.set(k * tx.userData.aspect, k, 1);
+      s.userData.wpx = px * tx.userData.aspect; s.userData.hpx = px;
+    }));
+  }
+  const placed = [], fits = (x, y, w, h) => !placed.some(r => x < r[0] + r[2] && x + w > r[0] && y < r[1] + r[3] && y + h > r[1]);
+  tagItems.forEach(it => {
+    tagNdc.copy(it.anchor).project(camera);
+    const sx = (tagNdc.x + 1) / 2 * W, sy = (1 - tagNdc.y) / 2 * Hh;
+    let pick = null;
+    for (const s of [it.full, it.short]){
+      const w = s.userData.wpx + 4, h = s.userData.hpx + 2, x = sx - w / 2, y = sy - h;
+      if (tagNdc.z < 1 && fits(x, y, w, h)){ pick = s; placed.push([x, y, w, h]); break; }
+    }
+    it.full.visible = pick === it.full; it.short.visible = pick === it.short;
+    it.l.visible = it.d.visible = !!pick && !small;
   });
 }
 
@@ -96,9 +129,10 @@ $('optLabels').addEventListener('change', e => setNames(e.target.checked));
 setNames(st.namesOn);
 
 function namesFrame(){
-  const floating = st.namesOn && !st.editing && st.mode !== 'walk' && !st.pano && !st.measSel;   /* con una stanza scelta nelle misure parlano le quote */
+  const floating = st.namesOn && !st.editing && st.mode !== 'walk' && !st.pano && !st.measOn;   /* con le misure accese parlano le quote */
   if (floating && namesRev !== st.rev) buildNames();
   namesG.visible = floating;
+  if (floating) layoutNames();
   /* nomi scritti sul pavimento: in modifica sempre, mentre si cammina se i nomi sono accesi */
   const flat = st.editing || (st.namesOn && st.mode === 'walk');
   labelsG.children.forEach(m => { if (!m.userData.street) m.visible = flat; });
