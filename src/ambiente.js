@@ -11,11 +11,12 @@ import { glassMat } from './materials.js';
 
 /* Luce e resa: ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione.
    Nord in alto nella piantina: x = est, z = sud. Il sole segue il percorso vero per la latitudine
-   dell’Italia centrale; "Orientamento" ruota il nord se la piantina non è allineata. */
+   di Brindisi; "Orientamento" ruota il nord se la piantina non è allineata. */
 
 const DEG = Math.PI / 180;
-const LAT = 41.9 * DEG;
-const SEASONS = { inverno:{ dec:-20, noon:12.2 }, mezza:{ dec:4, noon:13.1 }, estate:{ dec:22, noon:13.2 } };
+const LAT = 40.63 * DEG;            // Brindisi
+/* mezzogiorno solare a Brindisi (17,9° E): 11:48 in ora solare, 12:48 con l’ora legale */
+const SEASONS = { inverno:{ dec:-20, noon:11.8 }, mezza:{ dec:4, noon:12.8 }, estate:{ dec:22, noon:12.85 } };
 const QUALITY = {
   alta:  { pr:2,   map:4096, post:true,  pointShadows:3 },
   media: { pr:1.5, map:2048, post:false, pointShadows:0 },
