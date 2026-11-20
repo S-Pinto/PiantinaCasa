@@ -166,7 +166,12 @@ function buildContext(){
   const xW = west - 34, xE = east + 34;
   /* la stecca: 7 piani sotto l’attico, balconi continui su Via Verona */
   const gap = [X(WELL.x0) - 0.1, X(WELL.x1) + 0.1];
-  block(xW, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true, gapN:gap });
+  /* sul retro la facciata segue la casa (Google Earth): a filo sotto la veranda della cucina,
+     rientra davanti alla stanza a ovest della veranda, poi torna avanti */
+  const nx0 = X(58), nx1 = X(132.5), nz = Z(136);
+  block(xW, nx0, north, south, GROUND_Y, -0.42, { roof:false, north:true });
+  block(nx0, nx1, nz, south, GROUND_Y, -0.42, { roof:false, north:true });
+  block(nx1, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true, gapN:gap });
   block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false, gapS:gap });
   /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
      arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
@@ -185,17 +190,18 @@ function buildContext(){
   });
   /* copertura attorno all’attico: tetto piano a quadrotti, muretto e volumi tecnici, nessun altro appartamento */
   /* solaio dell’ultimo piano (con il vano scala), bucato dove scende la scala condominiale */
-  ctxG.add(holedSlab([[xW, north], [X(297), north], [X(297), Z(38)], [X(396), Z(38)], [X(396), north], [xE, north], [xE, south + 0.1], [xW, south + 0.1]],
+  ctxG.add(holedSlab([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [X(297), north], [X(297), Z(38)], [X(396), Z(38)], [X(396), north], [xE, north], [xE, south + 0.1], [xW, south + 0.1]],
     -0.44, -0.04, new THREE.MeshStandardMaterial({ color:'#d9d7d2', roughness:.9 })));
   /* quadrotti su tutta la copertura, anche sulla striscia dietro la casa */
   {
     const t = roofBase.clone(); t.needsUpdate = true; t.repeat.set(0.25, 0.25);
-    ctxG.add(holedPlane([[xW, north], [wx0, north], [wx0, wz0], [wx1, wz0], [wx1, north], [xE, north], [xE, south], [xW, south]],
+    ctxG.add(holedPlane([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [wx0, north], [wx0, wz0], [wx1, wz0], [wx1, north], [xE, north], [xE, south], [xW, south]],
       -0.03, new THREE.MeshStandardMaterial({ map:t, roughness:.95 })));
   }
   /* muretti d’attico sui bordi del tetto (non attraversano l’appartamento né il suo retro) */
   [[xW, west], [east, xE]].forEach(r => plainBox(r[0], r[1], south - 0.25, south, -0.04, 0.9, whiteMat));
-  [[xW, X(135) - 0.05], [X(667) + 0.05, xE]].forEach(r => plainBox(r[0], r[1], north, north + 0.25, -0.04, 0.9, whiteMat));
+  [[xW, nx0], [X(667) + 0.05, xE]].forEach(r => plainBox(r[0], r[1], north, north + 0.25, -0.04, 0.9, whiteMat));
+  plainBox(nx0 - 0.25, nx0, north, nz, -0.04, 0.9, whiteMat);     /* muretto sul bordo del rientro */
   plainBox(xW, xW + 0.25, north, south, -0.04, 0.9, whiteMat);
   plainBox(xE - 0.25, xE, north, south, -0.04, 0.9, whiteMat);
   [[xW + 7, north + 3.2], [xW + 21, mid - 2], [east + 9, north + 3.2], [xE - 10, mid - 2]].forEach(b => roofBox(b[0], b[1], 5, 4.2, -0.04));
