@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { X, Z, st } from './core.js';
+import { WELL, X, Z, st } from './core.js';
 import { labelsG, scene } from './scene.js';
 import { holedPlane, holedSlab, plate, road } from './build.js';
 import { mergeStatic } from './prestazioni.js';
@@ -131,7 +131,16 @@ function block(x0, x1, z0, z1, y0, y1, o){
     [d, [ x1, (z0+z1)/2 ], Math.PI/2,    texWin],
     [d, [ x0, (z0+z1)/2 ], -Math.PI/2,   texWin]
   ];
-  faces.forEach(f => {
+  /* o.gapN / o.gapS: tratto [x0, x1] senza facciata (lì scende il pozzo della scala) */
+  const face = (f, x0f, x1f) => {
+    const wf = x1f - x0f; if (wf < 0.01) return;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(wf, h), facadeMat(f[3], wf, h, tint));
+    m.position.set((x0f + x1f) / 2, y0 + h/2, f[1][1]); m.rotation.y = f[2];
+    ctxG.add(m);
+  };
+  faces.forEach((f, i) => {
+    const gap = i === 0 ? o.gapS : i === 1 ? o.gapN : null;
+    if (gap){ face(f, x0, gap[0]); face(f, gap[1], x1); return; }
     const m = new THREE.Mesh(new THREE.PlaneGeometry(f[0], h), facadeMat(f[3], f[0], h, tint));
     m.position.set(f[1][0], y0 + h/2, f[1][1]); m.rotation.y = f[2];
     ctxG.add(m);
@@ -156,13 +165,14 @@ function buildContext(){
   const west = X(62), east = X(675), north = Z(97), south = Z(352), mid = Z(300);
   const xW = west - 34, xE = east + 34;
   /* la stecca: 7 piani sotto l’attico, balconi continui su Via Verona */
-  block(xW, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true });
-  block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false });
+  const gap = [X(WELL.x0) - 0.1, X(WELL.x1) + 0.1];
+  block(xW, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true, gapN:gap });
+  block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false, gapS:gap });
   /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
      arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
   /* parte dal lato ovest del vano scala e va verso est: la vetrata della cucina guarda nel vuoto */
   const wx0 = X(297) - 0.2, wx1 = X(297) + 9, wz0 = north - 30;
-  block(wx0, wx1, wz0, north, GROUND_Y, -0.04, { south:false, roof:false });
+  block(wx0, wx1, wz0, north, GROUND_Y, -0.04, { south:false, roof:false, gapS:gap });
   plainBox(wx0, wx1, wz0, wz0 + 0.25, -0.04, 0.9, whiteMat);
   plainBox(wx0, wx0 + 0.25, wz0, north, -0.04, 0.9, whiteMat);
   plainBox(wx1 - 0.25, wx1, wz0, north, -0.04, 0.9, whiteMat);
