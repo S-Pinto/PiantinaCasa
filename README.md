@@ -1,6 +1,6 @@
 # PiantinaCasa
 
-Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate. Luce del giorno, del tramonto e della notte con il sole nella posizione vera, misure delle stanze, metro, e un Panorama 3D a tutto schermo con il palazzo e il quartiere attorno.
+Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate, impianti elettrico, idraulico e domotico con elenco quantità. Luce del giorno, del tramonto e della notte con il sole nella posizione vera, misure delle stanze, metro, tetto da mostrare o nascondere, e un Panorama 3D a tutto schermo con il palazzo e il quartiere attorno.
 
 ## Come aprirla
 
@@ -21,7 +21,7 @@ Una volta sola: nel repository vai su **Settings → Pages**, in *Build and depl
 ```
 index.html          la pagina: interfaccia (dentro un <template>) e mappa degli import di three.js
 css/style.css       lo stile
-data/plan.json      il modello della casa (muri, aperture, pavimenti, parapetti, nomi, arredi, versioni)
+data/plan.json      il modello della casa (muri, aperture, pavimenti, parapetti, nomi, arredi, versioni, impianti)
 src/                il codice, in moduli ES senza passaggi di build
 tools/              strumenti per chi sviluppa
 ```
@@ -43,6 +43,7 @@ tools/              strumenti per chi sviluppa
 | `overlay.js` | evidenziazioni 3D dell’editor |
 | `props.js` | scheda delle proprietà dell’elemento selezionato |
 | `variants.js` | menu opzioni e pannello delle versioni di arredo |
+| `impianti.js` | impianti elettrico, idraulico e domotica: catalogo, livelli, aggancio ai muri, elenco quantità |
 | `storage.js` | salvataggi, import/export, file HTML da inviare |
 | `ambiente.js` | ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione |
 | `contesto.js` | il palazzo sotto l’attico, le unità vicine, strade, alberi e palazzine del quartiere |

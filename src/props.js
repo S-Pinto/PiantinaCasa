@@ -7,6 +7,7 @@ import { isH } from './model.js';
 import { labelWpx } from './build.js';
 import { setHint } from './views.js';
 import { deleteSel, duplicateSel, mutate, selItem, setSel, splitRail } from './editor.js';
+import { RUNK, SYS, buildRunCatalog, buildSysCatalog, runKind, setCatLayer, sysProps, sysType } from './impianti.js';
 
 /* ---------- scheda delle proprietà ---------- */
 const propsEl = $('props'), sheetEl = $('sheet');
@@ -128,10 +129,12 @@ function buildCatalog(){
 function refreshProps(){
   propsEl.textContent = '';
   const it = (st.editing && st.tool === 'select') ? selItem() : null;
-  const cat = st.editing && st.tool === 'furn';
-  sheetEl.hidden = !(it || cat);
+  const cat = st.editing && st.tool === 'furn', scat = st.editing && st.tool === 'sys', rcat = st.editing && st.tool === 'run';
+  sheetEl.hidden = !(it || cat || scat || rcat);
   setHint();
   if (cat){ $('stitle').textContent = 'Arredi'; buildCatalog(); return; }
+  if (scat){ setCatLayer(SYS[sysType].l); $('stitle').textContent = 'Impianti: ' + SYS[sysType].n; buildSysCatalog(); return; }
+  if (rcat){ $('stitle').textContent = 'Tracciati: ' + RUNK[runKind].n; buildRunCatalog(); return; }
   if (!it) return;
   const add = n => propsEl.appendChild(n);
   const acts = el('div','acts');
@@ -198,6 +201,8 @@ function refreshProps(){
     add(section('Colore'));
     add(colorRow(f.col, v => mutate(() => { f.col = v || undefined; }), true));
     acts.append(btn('Ruota di 90°', () => mutate(() => { f.rot = (f.rot + 90) % 360; })), btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
+  } else if (it.type === 'sys' || it.type === 'run'){
+    sysProps(it, add, acts, title);
   } else if (it.type === 'label'){
     const l = it.obj; title.textContent = 'Nome sul pavimento';
     add(fld('Testo', txtIn(l.text, v => mutate(() => { l.text = v; }))));
@@ -214,4 +219,4 @@ $('scollapse').addEventListener('click', () => {
   $('scollapse').style.transform = c ? '' : 'rotate(180deg)';
 });
 
-export { refreshProps };
+export { propsEl, refreshProps, sheetEl };

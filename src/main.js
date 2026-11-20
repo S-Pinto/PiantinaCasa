@@ -13,6 +13,7 @@ import { contextFrame } from './contesto.js';
 import { initRoof, roofFrame } from './tetto.js';
 import { measFrame } from './misure.js';
 import { initPano } from './panorama.js';
+import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
 
 /* Punto di ingresso: carica la piantina, collega il puntatore e fa girare il ciclo di render. */
 
@@ -45,7 +46,7 @@ async function loadPlan(){
 
 /* ------------------------- Puntatore: passeggiata o editor ------------------------- */
 canvas.addEventListener('pointerdown', e => { if (st.mode === 'walk') walkPointerDown(e); else editorDown(e); });
-canvas.addEventListener('pointermove', e => { if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
+canvas.addEventListener('pointermove', e => { hoverSys(e); if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
 canvas.addEventListener('pointerup', e => { walkPointerUp(); editorUp(e, false); });
 canvas.addEventListener('pointercancel', e => { walkPointerUp(); editorUp(e, true); });
 
@@ -68,6 +69,7 @@ function frame(time){
   if (st.mode === 'walk') walk(dt); else controls.update();
   if (st.needRebuild){ rebuild(); st.needRebuild = false; }
   if (st.overlayDirty){ drawOverlay(); st.overlayDirty = false; }
+  updSysSprites();
   if (st.editing){
     const ks = Math.max(.6, camera.position.distanceTo(controls.target) / 26);
     editG.children.forEach(o => { if (o.userData.handle) o.scale.set(ks, 1, ks); });
@@ -112,6 +114,7 @@ function start(){
   initTheme();
   buildDock();
   initFileUi();
+  initImpianti();
   new ResizeObserver(resize).observe(stage);
   resize();
   rebuild();

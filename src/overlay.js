@@ -4,6 +4,7 @@ import { editG } from './scene.js';
 import { isH, wallT } from './model.js';
 import { clearGroup, labelWpx } from './build.js';
 import { getHandles, selItem } from './editor.js';
+import { sysOverlay } from './impianti.js';
 
 /* ---------- evidenziazioni 3D ---------- */
 const ACC = 0x2f8fff, ORG = 0xff9f1a;
@@ -71,15 +72,16 @@ function drawOverlay(){
     }
     getHandles().forEach(h => ovHandle(h.x, h.y, col));
   }
+  sysOverlay(it);
   if (st.draft){
     if (st.draft.kind === 'rect'){
       const x0 = Math.min(st.draft.x0,st.draft.x1), x1 = Math.max(st.draft.x0,st.draft.x1), y0 = Math.min(st.draft.y0,st.draft.y1), y1 = Math.max(st.draft.y0,st.draft.y1);
       if (x1 > x0 && y1 > y0) ovPoly([[x0,y0],[x1,y0],[x1,y1],[x0,y1]], ACC, .35, .12);
     } else {
-      const t = st.tool === 'wallE' ? 8 : st.tool === 'wallI' ? 4 : 8;
+      const t = st.tool === 'wallE' ? 8 : st.tool === 'wallI' ? 4 : st.tool === 'run' ? 3 : 8;
       ovBox(Math.min(st.draft.x0,st.draft.x1) - t/2, Math.max(st.draft.x0,st.draft.x1) + t/2, Math.min(st.draft.y0,st.draft.y1) - t/2, Math.max(st.draft.y0,st.draft.y1) + t/2, 0, .34, ACC, .6);
     }
   }
 }
 
-export { drawOverlay };
+export { ACC, ORG, drawOverlay, ovBox };

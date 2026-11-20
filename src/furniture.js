@@ -102,4 +102,4 @@ const FURN = {
     fbox(g,W,H,D,0,0,0,C); fbox(g,W-.14,.02,D-.14,0,H-.02,0,'#dfe6ea'); } }
 };
 
-export { FURN };
+export { FURN, fbox, fcyl };

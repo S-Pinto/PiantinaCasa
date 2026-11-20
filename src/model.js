@@ -2,6 +2,7 @@ import { clamp, st } from './core.js';
 import { TEXDEF } from './textures.js';
 import { FLOORS } from './materials.js';
 import { FURN } from './furniture.js';
+import { RUNK, SYS } from './impianti.js';
 
 /* ------------------------- Il modello dati -------------------------
    La piantina è un oggetto JSON (vedi data/plan.json): muri con aperture, colonne, pavimenti,
@@ -16,7 +17,7 @@ const okTex = t => (typeof t === 'string' && TEXDEF[t]) ? t : undefined;
 const normSide = o => (o && typeof o === 'object') ? { col:okCol(o.col), tx:okTex(o.tx), h:(typeof o.h === 'number' && isFinite(o.h) && o.h > 0) ? clamp(o.h, .1, 4) : undefined, tcol:okCol(o.tcol) } : undefined;
 function normalize(p){
   const num = v => (typeof v === 'number' && isFinite(v));
-  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[], variants:[], active:'' };
+  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[], sys:[], runs:[], variants:[], active:'' };
   (p.walls || []).forEach(w => {
     if (![w.x1,w.y1,w.x2,w.y2].every(num)) return;
     let x1 = w.x1, y1 = w.y1, x2 = w.x2, y2 = w.y2;
@@ -44,6 +45,17 @@ function normalize(p){
     out.labels.push({ id:l.id || uid(), text:String(l.text || ''), x:l.x, y:l.y, w:clamp(num(l.w) ? l.w : 1.2, .3, 8), g:l.g ? 1 : 0 });
   });
   out.furniture = normFurn(p.furniture);
+  /* impianti: comuni a tutte le versioni di arredo */
+  const note = v => (typeof v === 'string' && v.trim()) ? v.trim().slice(0, 80) : undefined;
+  (p.sys || []).forEach(o => {
+    if (!o || !SYS[o.t] || !num(o.x) || !num(o.y)) return;
+    out.sys.push({ id:o.id || uid(), t:o.t, x:o.x, y:o.y, z:clamp(num(o.z) ? o.z : SYS[o.t].z, 0, 4),
+      rot:num(o.rot) ? ((o.rot % 360) + 360) % 360 : 0, circ:note(o.circ) });
+  });
+  (p.runs || []).forEach(r => {
+    if (!r || !RUNK[r.k] || !Array.isArray(r.pts) || r.pts.length < 2 || !r.pts.every(q => Array.isArray(q) && num(q[0]) && num(q[1]))) return;
+    out.runs.push({ id:r.id || uid(), k:r.k, h:clamp(num(r.h) ? r.h : RUNK[r.k].h, 0, 4), circ:note(r.circ), pts:r.pts.map(q => [q[0],q[1]]) });
+  });
   (Array.isArray(p.variants) ? p.variants : []).forEach(v => {
     if (!v || typeof v !== 'object') return;
     const id = (typeof v.id === 'string' && v.id) ? v.id : uid();

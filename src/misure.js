@@ -12,8 +12,8 @@ measG.renderOrder = 10;
 scene.add(measG, tapeG);
 let measOn = false, measRev = -1, tapeOn = false, tapeA = null;
 
-const fmtM = v => v.toFixed(2).replace('.', ',') + ' m';
-const fmtA = v => v.toFixed(1).replace('.', ',') + ' m²';
+const misFmtM = v => v.toFixed(2).replace('.', ',') + ' m';
+const misFmtA = v => v.toFixed(1).replace('.', ',') + ' m²';
 const OUTDOOR = /balcon|veranda|terrazz/i, SKIP = /scale|ascensore/i;
 
 /* ---------- testo sempre leggibile: etichette a dimensione costante sullo schermo ---------- */
@@ -114,14 +114,14 @@ function buildMeasures(){
       const yq = w.y0 + (w.y1 - w.y0) * 0.24, xq = d.x0 + (d.x1 - d.x0) * 0.2;
       /* nei corridoi e negli spazi piccoli basta la superficie: le quote affollerebbero la pianta */
       if (Math.min(w.len, d.len) >= 1.5 && r.net >= 4){
-        dimLine(measG, X(w.lo), Z(yq), X(w.hi), Z(yq), y, 'dim', fmtM(w.len));
-        dimLine(measG, X(xq), Z(d.lo), X(xq), Z(d.hi), y, 'dim', fmtM(d.len));
+        dimLine(measG, X(w.lo), Z(yq), X(w.hi), Z(yq), y, 'dim', misFmtM(w.len));
+        dimLine(measG, X(xq), Z(d.lo), X(xq), Z(d.hi), y, 'dim', misFmtM(d.len));
       }
     }
     /* la superficie va sotto il nome della stanza */
     const lab = st.plan.labels.find(l => !l.g && pointInPoly(l.x, l.y, f.pts));
     const ax = lab ? lab.x : cx, ay = lab ? lab.y + 13 : cy;
-    const s = textSprite(fmtA(r.net), 'area'); s.position.set(X(ax), y, Z(ay)); measG.add(s);
+    const s = textSprite(misFmtA(r.net), 'area'); s.position.set(X(ax), y, Z(ay)); measG.add(s);
   });
   /* ingombro totale (filo esterno dei muri perimetrali) */
   const ext = st.plan.walls.filter(w => w.k === 'e');
@@ -131,8 +131,8 @@ function buildMeasures(){
       x0 = Math.min(x0, Math.min(w.x1, w.x2) - (isH(w) ? 0 : t)); x1 = Math.max(x1, Math.max(w.x1, w.x2) + (isH(w) ? 0 : t));
       y0 = Math.min(y0, Math.min(w.y1, w.y2) - (isH(w) ? t : 0)); y1 = Math.max(y1, Math.max(w.y1, w.y2) + (isH(w) ? t : 0)); });
     const floorsY = st.plan.floors.reduce((m, f) => Math.max(m, ...f.pts.map(p => p[1])), y1);
-    dimLine(measG, X(x0), Z(y0) - 1.3, X(x1), Z(y0) - 1.3, y, 'total', 'Fronte ' + fmtM((x1 - x0) * S));
-    dimLine(measG, X(x0) - 1.3, Z(y0), X(x0) - 1.3, Z(floorsY), y, 'total', 'Profondità ' + fmtM((floorsY - y0) * S));
+    dimLine(measG, X(x0), Z(y0) - 1.3, X(x1), Z(y0) - 1.3, y, 'total', 'Fronte ' + misFmtM((x1 - x0) * S));
+    dimLine(measG, X(x0) - 1.3, Z(y0), X(x0) - 1.3, Z(floorsY), y, 'total', 'Profondità ' + misFmtM((floorsY - y0) * S));
   }
   fillPanel(rooms);
 }
@@ -145,13 +145,13 @@ function fillPanel(rooms){
   rooms.slice().sort((a, b) => (a.out - b.out) || (b.net - a.net)).forEach(r => {
     if (r.out) tout += r.net; else tin += r.net;
     const li = el('li', r.out ? 'out' : '');
-    li.append(el('span', 'mn', r.f.name), el('span', 'md', r.rect ? (fmtM(r.w.len).replace(' m', '') + ' × ' + fmtM(r.d.len)) : ''), el('span', 'ma', fmtA(r.net)));
+    li.append(el('span', 'mn', r.f.name), el('span', 'md', r.rect ? (misFmtM(r.w.len).replace(' m', '') + ' × ' + misFmtM(r.d.len)) : ''), el('span', 'ma', misFmtA(r.net)));
     list.append(li);
   });
   $('mcount').textContent = rooms.length;
-  $('mtot').textContent = fmtA(tin);
-  $('mh').textContent = fmtM(H);
-  $('mout').textContent = fmtA(tout);
+  $('mtot').textContent = misFmtA(tin);
+  $('mh').textContent = misFmtM(H);
+  $('mout').textContent = misFmtA(tout);
 }
 function setMeasures(on){
   measOn = on;
@@ -200,7 +200,7 @@ canvas.addEventListener('pointerup', e => {
   const dot = new THREE.Mesh(dotGeo, dotMat); dot.position.copy(p); dot.renderOrder = 13; tapeG.add(dot);
   if (!tapeA){ tapeA = p; return; }
   const a = tapeA, dh = Math.hypot(p.x - a.x, p.z - a.z), dy = Math.abs(p.y - a.y);
-  const txt = fmtM(dh) + (dy > 0.05 ? '  ↕ ' + fmtM(dy) : '');
+  const txt = misFmtM(dh) + (dy > 0.05 ? '  ↕ ' + misFmtM(dy) : '');
   const g = new THREE.BufferGeometry().setFromPoints([a, p]);
   const l = new THREE.Line(g, lineMats.tape); l.renderOrder = 13; tapeG.add(l);
   const s = textSprite(txt, 'tape'); s.position.copy(a).lerp(p, .5); tapeG.add(s);

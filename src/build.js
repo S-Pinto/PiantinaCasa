@@ -6,6 +6,7 @@ import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMat
 import { FURN } from './furniture.js';
 import { isH, variantPlan, wallT } from './model.js';
 import { syncVariants } from './variants.js';
+import { rebuildSys } from './impianti.js';
 
 /* ------------------------- Utilità di costruzione ------------------------- */
 const colliders = [], staticColliders = [];
@@ -282,6 +283,7 @@ function rebuild(){
   st.plan.labels.forEach(buildLabel);
   st.plan.furniture.forEach(buildFurn);
   st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
+  rebuildSys();
   syncVariants();
 }
 /* Costruisce la seconda versione nei gruppi del confronto, riusando le stesse funzioni */
@@ -312,4 +314,4 @@ const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true
   collide(354,388,42,133,staticColliders);
 })();
 
-export { buildCmp, clearGroup, colliders, labelWpx, plate, rebuild, road };
+export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, road };
