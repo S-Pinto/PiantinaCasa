@@ -6,11 +6,12 @@ import { buildCmp, clearGroup } from './build.js';
 import { controls, preset, setHint } from './views.js';
 import { flash, mutate, setEditing } from './editor.js';
 import { refreshProps } from './props.js';
+import { toggleSysMenu } from './impianti.js';
 
 /* ---------- menu opzioni ---------- */
 const menuEl = $('menu'), btnMenu = $('btnMenu');
 function toggleMenu(open){ menuEl.hidden = !open; btnMenu.setAttribute('aria-expanded', String(open)); if (open) toggleVar(false); }
-btnMenu.addEventListener('click', () => toggleMenu(menuEl.hidden));
+btnMenu.addEventListener('click', () => { if (menuEl.hidden) toggleSysMenu(false); toggleMenu(menuEl.hidden); });
 document.addEventListener('pointerdown', e => {
   if (!menuEl.hidden && !menuEl.contains(e.target) && !btnMenu.contains(e.target)) toggleMenu(false);
 });
@@ -127,4 +128,4 @@ function renderVarPanel(focusName){
     (ro ? '' : ' Per modificare la versione attiva usa Modifica.')));
 }
 
-export { setCompare, syncVariants };
+export { setCompare, syncVariants, toggleMenu, toggleVar };

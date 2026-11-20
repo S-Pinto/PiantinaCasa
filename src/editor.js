@@ -9,6 +9,7 @@ import { controls, hintEl, setHint, setMode, updateLow } from './views.js';
 import { refreshProps } from './props.js';
 import { setCompare } from './variants.js';
 import { scheduleSave } from './storage.js';
+import { RUNK, SYS, fmtM, layerOn, placeSys, runKind, runLen, setLayer, sysHit, sysType, wallSnap } from './impianti.js';
 
 /* =========================================================================
    EDITOR
@@ -33,7 +34,9 @@ const TIPS = {
   fence:'Trascina per disegnare una ringhiera.',
   cut:'Tocca un parapetto, una vetrata o una ringhiera per dividerlo in due pezzi. Poi scegli Seleziona per cambiare un pezzo.',
   furn:'Scegli un arredo dall’elenco e tocca la pianta per metterlo.',
-  label:'Clicca per aggiungere il nome di una stanza.'
+  label:'Clicca per aggiungere il nome di una stanza.',
+  sys:'Scegli un elemento e tocca la pianta. Quelli a parete si agganciano al muro più vicino, dal lato dove tocchi.',
+  run:'Scegli il tipo di linea e trascina sulla pianta per tracciare un tratto. Puoi tracciarne quanti vuoi, uno dopo l’altro.'
 };
 
 
@@ -58,6 +61,8 @@ function guides(ex){
   st.plan.walls.forEach(w => { if (w.id === ex) return; xs.push(w.x1,w.x2); ys.push(w.y1,w.y2); });
   st.plan.columns.forEach(c => { if (c.id === ex) return; xs.push(c.x0,c.x1); ys.push(c.y0,c.y1); });
   st.plan.floors.forEach(f => { if (f.id === ex) return; f.pts.forEach(p => { xs.push(p[0]); ys.push(p[1]); }); });
+  st.plan.runs.forEach(r => { if (r.id === ex || !layerOn[RUNK[r.k].l]) return; r.pts.forEach(p => { xs.push(p[0]); ys.push(p[1]); }); });
+  st.plan.sys.forEach(o => { if (o.id === ex || !layerOn[SYS[o.t].l]) return; xs.push(o.x); ys.push(o.y); });
   return { xs:xs, ys:ys };
 }
 function snap1(v, arr, tol){
@@ -84,7 +89,7 @@ function selItem(){
     const w = byId(st.plan.walls, st.sel.id); const o = w && w.ops[st.sel.i];
     return o ? { type:'op', wall:w, op:o, obj:o } : null;
   }
-  const arr = { wall:st.plan.walls, column:st.plan.columns, floor:st.plan.floors, rail:st.plan.rails, label:st.plan.labels, furn:st.plan.furniture }[st.sel.type];
+  const arr = { wall:st.plan.walls, column:st.plan.columns, floor:st.plan.floors, rail:st.plan.rails, label:st.plan.labels, furn:st.plan.furniture, sys:st.plan.sys, run:st.plan.runs }[st.sel.type];
   const obj = arr && byId(arr, st.sel.id);
   return obj ? { type:st.sel.type, obj:obj } : null;
 }
@@ -96,6 +101,7 @@ function validateSel(){ if (st.sel && !selItem()) st.sel = null; }
 
 function hitTest(px, py){
   const tol = tolPx();
+  const sh = sysHit(px, py, tol); if (sh) return sh;
   for (const w of st.plan.walls){
     const t = wallT(w), h = isH(w), c = h ? w.y1 : w.x1;
     for (let i=0; i<w.ops.length; i++){
@@ -142,7 +148,7 @@ function getHandles(){
     const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + 7;
     return [{ k:'rot', x:f.x - Math.sin(th) * off, y:f.y + Math.cos(th) * off }];
   }
-  if (it.type === 'floor' || it.type === 'rail') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
+  if (it.type === 'floor' || it.type === 'rail' || it.type === 'run') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
   return [];
 }
 
@@ -172,8 +178,8 @@ function shiftItem(type, obj, dx, dy){
     obj.ops.forEach(o => { o.p += h ? dx : dy; });
   } else if (type === 'op'){ /* gestito a parte */ }
   else if (type === 'column'){ obj.x0 += dx; obj.x1 += dx; obj.y0 += dy; obj.y1 += dy; }
-  else if (type === 'floor' || type === 'rail'){ obj.pts.forEach(p => { p[0] += dx; p[1] += dy; }); }
-  else if (type === 'label' || type === 'furn'){ obj.x += dx; obj.y += dy; }
+  else if (type === 'floor' || type === 'rail' || type === 'run'){ obj.pts.forEach(p => { p[0] += dx; p[1] += dy; }); }
+  else if (type === 'label' || type === 'furn' || type === 'sys'){ obj.x += dx; obj.y += dy; }
 }
 function nudge(dx, dy){
   const it = selItem(); if (!it) return;
@@ -181,6 +187,9 @@ function nudge(dx, dy){
     if (it.type === 'op'){ const h = isH(it.wall); const a = h ? it.wall.x1 : it.wall.y1, b = h ? it.wall.x2 : it.wall.y2;
       it.op.p = clamp(it.op.p + (h ? dx : dy), a + it.op.w/2, b - it.op.w/2); }
     else shiftItem(it.type, it.obj, dx, dy);
+    if (it.type === 'sys' && SYS[it.obj.t].m === 'w'){
+      const ws = wallSnap(it.obj.x, it.obj.y, 2); if (ws){ it.obj.x = ws.x; it.obj.y = ws.y; it.obj.rot = ws.rot; }
+    }
   });
 }
 function deleteSel(){
@@ -188,7 +197,7 @@ function deleteSel(){
   mutate(() => {
     if (it.type === 'op') it.wall.ops.splice(st.sel.i, 1);
     else {
-      const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture' }[it.type];
+      const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture', sys:'sys', run:'runs' }[it.type];
       st.plan[key] = st.plan[key].filter(x => x.id !== it.obj.id);
     }
   });
@@ -198,9 +207,10 @@ function duplicateSel(){
   const it = selItem(); if (!it || it.type === 'op') return;
   let nid = null;
   mutate(() => {
-    const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture' }[it.type];
+    const key = { wall:'walls', column:'columns', floor:'floors', rail:'rails', label:'labels', furn:'furniture', sys:'sys', run:'runs' }[it.type];
     const c = clone(it.obj); c.id = uid(); nid = c.id;
-    shiftItem(it.type, c, 10, 10);
+    if (it.type === 'sys' && SYS[c.t].m === 'w'){ const v = c.rot === 90 || c.rot === 270; shiftItem('sys', c, v ? 0 : 5, v ? 5 : 0); }
+    else shiftItem(it.type, c, 10, 10);
     st.plan[key].push(c);
   });
   if (nid){ st.sel = { type:it.type, id:nid }; st.overlayDirty = true; refreshProps(); }
@@ -227,6 +237,8 @@ function attachedFor(w){
 /* ---------- interazione col puntatore ---------- */
 function setTool(t){
   st.tool = t; if (t !== 'select') st.sel = null;
+  if (t === 'sys') setLayer(SYS[sysType].l, true);
+  if (t === 'run') setLayer(RUNK[runKind].l, true);
   st.drag = null; st.draft = null;
   document.querySelectorAll('#dock button[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
   canvas.style.cursor = t === 'select' ? 'default' : 'crosshair';
@@ -247,11 +259,13 @@ const ICONS = {
   fence:'<svg class="i" viewBox="0 0 24 24"><path d="M3 8h18M3 17h18M5 8v11M9.7 8v9M14.3 8v9M19 8v11"/></svg>',
   cut:'<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8.2L20 18M8 15.8L20 6"/></svg>',
   furn:'<svg class="i" viewBox="0 0 24 24"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4H3z"/><path d="M6 17v2M18 17v2"/></svg>',
-  label:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18l4.5-11L13 18M5.7 14h5.6M16 9.5h4M18 9.5V18"/></svg>'
+  label:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18l4.5-11L13 18M5.7 14h5.6M16 9.5h4M18 9.5V18"/></svg>',
+  sys:'<svg class="i" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg>',
+  run:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18h7V7h9"/><circle cx="4" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="7" r="1.8" fill="currentColor"/></svg>'
 };
 const TOOLDEF = [['select','Seleziona'],['|'],['wallE','Muro esterno'],['wallI','Muro interno'],['|'],
   ['door','Porta'],['win','Finestra'],['pf','Porta-finestra'],['open','Varco'],['|'],
-  ['column','Colonna'],['floor','Pavimento'],['rail','Parapetto'],['glazed','Vetrata'],['fence','Ringhiera'],['cut','Dividi'],['furn','Arredi'],['label','Nome stanza']];
+  ['column','Colonna'],['floor','Pavimento'],['rail','Parapetto'],['glazed','Vetrata'],['fence','Ringhiera'],['cut','Dividi'],['furn','Arredi'],['label','Nome stanza'],['|'],['sys','Impianti'],['run','Tracciati']];
 function buildDock(){
   const d = $('dock');
   TOOLDEF.forEach(t => {
@@ -294,7 +308,7 @@ function editorDown(e){
              attached:it.type === 'wall' ? attachedFor(it.obj) : [] };
     return;
   }
-  if (st.tool === 'wallE' || st.tool === 'wallI' || st.tool === 'rail' || st.tool === 'glazed' || st.tool === 'fence'){
+  if (st.tool === 'wallE' || st.tool === 'wallI' || st.tool === 'rail' || st.tool === 'glazed' || st.tool === 'fence' || st.tool === 'run'){
     const g = guides(null), q = [snap1(p[0], g.xs, tol*.8), snap1(p[1], g.ys, tol*.8)];
     st.draft = { kind:'line', x0:q[0], y0:q[1], x1:q[0], y1:q[1] };
     st.drag = { kind:'draw', before:before, g:g };
@@ -340,7 +354,12 @@ function editorMove(e){
     } else if (it.type === 'column'){
       const c = it.obj, ddx = snapDelta([o.x0,o.x1], dx, g.xs, tol), ddy = snapDelta([o.y0,o.y1], dy, g.ys, tol);
       c.x0 = o.x0 + ddx; c.x1 = o.x1 + ddx; c.y0 = o.y0 + ddy; c.y1 = o.y1 + ddy;
-    } else if (it.type === 'floor' || it.type === 'rail'){
+    } else if (it.type === 'sys'){
+      const ob = it.obj, nx = o.x + dx, ny = o.y + dy;
+      const ws = SYS[ob.t].m === 'w' ? wallSnap(nx, ny, tol*1.8) : null;
+      if (ws){ ob.x = ws.x; ob.y = ws.y; ob.rot = ws.rot; }
+      else { ob.rot = o.rot; ob.x = o.x + snapDelta([o.x], dx, g.xs, tol); ob.y = o.y + snapDelta([o.y], dy, g.ys, tol); }
+    } else if (it.type === 'floor' || it.type === 'rail' || it.type === 'run'){
       const ddx = snapDelta(o.pts.map(q => q[0]), dx, g.xs, tol), ddy = snapDelta(o.pts.map(q => q[1]), dy, g.ys, tol);
       it.obj.pts = o.pts.map(q => [q[0] + ddx, q[1] + ddy]);
     } else if (it.type === 'label' || it.type === 'furn'){
@@ -369,7 +388,7 @@ function editorMove(e){
         const x0 = Math.min(sx, opp[0]), x1 = Math.max(sx, opp[0]), y0 = Math.min(sy, opp[1]), y1 = Math.max(sy, opp[1]);
         if (x1 - x0 >= 4 && y1 - y0 >= 4) it.obj.pts = [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
       } else it.obj.pts[k] = [sx, sy];
-    } else if (it.type === 'rail'){
+    } else if (it.type === 'rail' || it.type === 'run'){
       it.obj.pts[k] = [sx, sy];
     } else if (it.type === 'furn'){
       const f = it.obj;
@@ -412,6 +431,12 @@ function finishDraw(d){
     st.plan.floors.push(f); pushUndo(before); rebuild(); setTool('select'); setSel({ type:'floor', id:f.id }); return;
   }
   if (Math.hypot(dr.x1 - dr.x0, dr.y1 - dr.y0) < 4) return;
+  if (st.tool === 'run'){
+    const r = { id:uid(), k:runKind, h:RUNK[runKind].h, pts:[[dr.x0,dr.y0],[dr.x1,dr.y1]] };
+    st.plan.runs.push(r); pushUndo(before); rebuild();
+    flash(RUNK[runKind].n + ': tratto di ' + fmtM(runLen(r)) + '. Trascina ancora per continuare.');
+    return;
+  }
   if (st.tool === 'wallE' || st.tool === 'wallI'){
     const w = { id:uid(), x1:Math.min(dr.x0,dr.x1), y1:Math.min(dr.y0,dr.y1), x2:Math.max(dr.x0,dr.x1), y2:Math.max(dr.y0,dr.y1), k:st.tool === 'wallE' ? 'e' : 'i', ops:[] };
     st.plan.walls.push(w); pushUndo(before); rebuild(); setTool('select'); setSel({ type:'wall', id:w.id });
@@ -454,6 +479,7 @@ function splitRail(){
 function doPlace(d){
   const p = d.p, tol = tolPx(), before = d.before;
   if (st.tool === 'cut'){ cutRail(p); return; }
+  if (st.tool === 'sys'){ placeSys(p, before); return; }
   if (st.tool === 'column'){
     const cx = opt.snap ? Math.round(p[0]/GRID)*GRID : p[0], cy = opt.snap ? Math.round(p[1]/GRID)*GRID : p[1];
     const c = { id:uid(), x0:cx-5, x1:cx+5, y0:cy-5, y1:cy+5 };
@@ -517,4 +543,4 @@ function setEditing(on){
 }
 $('btnEdit').addEventListener('click', () => setEditing(!st.editing));
 
-export { TIPS, buildDock, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, getHandles, histBtns, mutate, pushUndo, selItem, setEditing, setSel, splitRail, validateSel };
+export { GRID, TIPS, buildDock, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, getHandles, ground, histBtns, mutate, opt, pushUndo, selItem, setEditing, setSel, splitRail, tolPx, validateSel };

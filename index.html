@@ -37,6 +37,8 @@
       <svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
     <button type="button" class="ib edit-only" id="redo" aria-label="Ripeti" title="Ripeti" hidden="">
       <svg class="i" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg></button>
+    <button type="button" class="ib" id="btnSys" aria-pressed="false" aria-haspopup="true" aria-expanded="false" title="Livelli degli impianti">
+      <svg class="i" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"></path></svg><span class="lbl">Impianti</span></button>
     <button type="button" class="ib" id="btnVar" aria-haspopup="true" aria-expanded="false" title="Versioni di arredo">
       <svg class="i" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"></path><path d="M4 12l8 4 8-4"></path><path d="M4 16l8 4 8-4"></path></svg><span class="lbl" id="varLbl">Versioni</span></button>
     <button type="button" class="ib" id="btnEdit" aria-pressed="false" title="Modifica la casa">
@@ -72,6 +74,14 @@
   </div>
 
   <div class="vpanel glass" id="vpanel" hidden=""></div>
+  <div class="menu glass" id="sysmenu" hidden="">
+    <p class="pt">Livelli degli impianti</p>
+    <label class="mrow"><span><i class="ldot" style="background:#e8a317"></i>Elettrico</span><input type="checkbox" id="ly-el"></label>
+    <label class="mrow"><span><i class="ldot" style="background:#2f86d6"></i>Idraulico</span><input type="checkbox" id="ly-h2o"></label>
+    <label class="mrow"><span><i class="ldot" style="background:#2fa36b"></i>Domotica</span><input type="checkbox" id="ly-dom"></label>
+    <button type="button" class="btn primary" id="btnQty" style="width:100%;margin-top:12px">Elenco quantità</button>
+    <p class="note">Per aggiungere prese, tubi o sensori premi Modifica e scegli Impianti o Tracciati.</p>
+  </div>
   <div class="cmpui" id="cmpui" data-dir="h" hidden=""><div class="div"></div><p class="tag ta" id="cmpA"></p><p class="tag tb" id="cmpB"></p></div>
 
   <nav class="dock glass edit-only" id="dock" aria-label="Strumenti di modifica" hidden=""></nav>
@@ -91,6 +101,7 @@
     <div class="where" id="where" aria-live="polite"></div>
   </div>
   <p class="hint" id="hint"></p>
+  <div class="tip" id="tip" hidden=""></div>
 
   <div id="dlg" hidden="">
     <div class="box glass" role="dialog" aria-modal="true" aria-labelledby="dlgt">
@@ -103,7 +114,20 @@
         <button type="button" class="btn" id="dlgclose">Chiudi</button>
       </div>
     </div>
-  </div></template>
+  </div>
+
+  <div id="qty" hidden="">
+    <div class="box glass" role="dialog" aria-modal="true" aria-labelledby="qtyt">
+      <h2 id="qtyt">Elenco quantità degli impianti</h2>
+      <div class="qbody" id="qtybody"></div>
+      <div class="acts">
+        <button type="button" class="btn" id="qtycopy">Copia testo</button>
+        <button type="button" class="btn" id="qtycsv">Scarica CSV</button>
+        <button type="button" class="btn" id="qtyclose">Chiudi</button>
+      </div>
+    </div>
+  </div>
+</div></template>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>
