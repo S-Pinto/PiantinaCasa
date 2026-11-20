@@ -6,6 +6,7 @@ import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMat
 import { FURN } from './furniture.js';
 import { isH, variantPlan, wallT } from './model.js';
 import { syncVariants } from './variants.js';
+import { mergeStatic } from './prestazioni.js';
 import { rebuildSys } from './impianti.js';
 
 /* ------------------------- Utilità di costruzione ------------------------- */
@@ -104,14 +105,14 @@ function buildWall(w, wi){
   const solidPiece = (lo,hi,h0,h1) => { if (hi - lo > 0.01) part(lo,hi,h0,h1,t,wm,true); };
   const lintel = (lo,hi,h0,h1) => part(lo,hi,h0,h1,t,wm,'nocol');
 
-  const frame = (lo,hi,h0,h1) => {
+  /* telaio con n ante: un montante fra un’anta e l’altra */
+  const frame = (lo,hi,h0,h1,n) => {
     const ft = 3, fw = 1.6;
     part(lo,lo+fw,h0,h1,ft,frameMat,false);
     part(hi-fw,hi,h0,h1,ft,frameMat,false);
     part(lo,hi,h1-0.05,h1,ft,frameMat,false);
     if (h0 > 0) part(lo,hi,h0,h0+0.05,ft,frameMat,false);
-    const mid = (lo+hi)/2;
-    part(mid-fw/2,mid+fw/2,h0,h1,ft,frameMat,false);
+    for (let k=1; k<n; k++){ const q = lo + k*(hi-lo)/n; part(q-fw/2,q+fw/2,h0,h1,ft,frameMat,false); }
     if (horiz) box(lo+fw,hi-fw,c-0.35,c+0.35,h0,h1,glassMat,wallsG,false,false);
     else box(c-0.35,c+0.35,lo+fw,hi-fw,h0,h1,glassMat,wallsG,false,false);
   };
@@ -131,13 +132,16 @@ function buildWall(w, wi){
   iv.forEach(o => {
     solidPiece(cur, o.lo, 0, H);
     cur = o.hi;
-    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD); }
-    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD); }
+    if (o.t === 'win'){ solidPiece(o.lo, o.hi, 0, SILL); lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, SILL, HEAD, paneCount(o)); }
+    else if (o.t === 'pf'){ lintel(o.lo, o.hi, HEAD, H); frame(o.lo, o.hi, 0, HEAD, paneCount(o)); }
     else if (o.t === 'door'){ lintel(o.lo, o.hi, HEAD, H); leaf(o); }
     else { lintel(o.lo, o.hi, HEAD, H); }
   });
   solidPiece(cur, b + t/2 + 0.04, 0, H);
 }
+
+/* Numero di ante di una finestra o porta-finestra: o.n se scelto, altrimenti 2 (come prima) */
+const paneCount = o => clamp(Math.round(o.n || 2), 1, 24);
 
 function buildColumn(c){
   box(c.x0,c.x1,c.y0,c.y1,0,H,wallMatsFor(c.col,c.tx),wallsG,true,true,c.tx ? TEXDEF[c.tx].tile : 0);
@@ -157,7 +161,7 @@ function buildRail(r){
     if (r.kind === 'fence'){
       buildFence(r, a, b, horiz);
     } else if (r.kind === 'glazed'){
-      const sill = 0.9, pitchPx = 40;
+      const sill = 0.9, pitchPx = clamp(r.pw || 1.6, .2, 4) / S;      /* r.pw = larghezza di ogni vetro in metri */
       const lo = (horiz ? Math.min(a[0],b[0]) : Math.min(a[1],b[1])) - t/2;
       const hi = (horiz ? Math.max(a[0],b[0]) : Math.max(a[1],b[1])) + t/2;
       const c = horiz ? a[1] : a[0];
@@ -184,15 +188,15 @@ function buildRail(r){
 
 /* Ringhiera: corrimano, montanti, traverso e sbarre (le sbarre sono una texture con trasparenza) */
 const metalCache = {}, barMatCache = {};
-function metalMat(c){ return metalCache[c] || (metalCache[c] = mat(c, { roughness:.45, metalness:.35 })); }
+function metalMat(c){ return metalCache[c] || (metalCache[c] = mat(c, { roughness:.5, metalness:.15 })); }
 let barTexture = null;
 function barMat(c){
   if (!barTexture){
     const cv = document.createElement('canvas'); cv.width = 16; cv.height = 16;
-    const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(6, 0, 4, 16);
+    const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(6, 0, 3, 16);
     barTexture = toTex(cv);
   }
-  return barMatCache[c] || (barMatCache[c] = new THREE.MeshStandardMaterial({ color:c, map:barTexture, alphaTest:.5, side:THREE.DoubleSide, roughness:.45, metalness:.35 }));
+  return barMatCache[c] || (barMatCache[c] = new THREE.MeshStandardMaterial({ color:c, map:barTexture, alphaTest:.5, side:THREE.DoubleSide, roughness:.5, metalness:.15 }));
 }
 function buildFence(r, a, b, horiz){
   const h = clamp(r.h || 1.0, .4, 1.6), col = r.col || '#3b4048', base = clamp(r.base || 0, 0, h - 0.3);
@@ -200,16 +204,19 @@ function buildFence(r, a, b, horiz){
   const c = horiz ? a[1] : a[0];
   const lo = horiz ? Math.min(a[0],b[0]) : Math.min(a[1],b[1]), hi = horiz ? Math.max(a[0],b[0]) : Math.max(a[1],b[1]);
   if (hi - lo < 1) return;
+  /* muretto in cemento chiaro con copertina, come sul terrazzo vero; sopra la ringhiera zincata */
   if (base > 0){
-    const bt = 5, bw = flatMat(r.bcol || '#e6dcc9', .85);
-    if (horiz) box(lo - bt/2, hi + bt/2, c - bt/2, c + bt/2, 0, base, bw, floorsG, true, true);
-    else box(c - bt/2, c + bt/2, lo - bt/2, hi + bt/2, 0, base, bw, floorsG, true, true);
+    const bt = 6, bw = flatMat(r.bcol || '#e6dcc9', .85), cap = flatMat('#efe8da', .7);
+    const wall = (p,q,th,h0,h1,m) => horiz ? box(p,q,c-th/2,c+th/2,h0,h1,m,floorsG,true,true) : box(c-th/2,c+th/2,p,q,h0,h1,m,floorsG,true,true);
+    wall(lo - bt/2, hi + bt/2, bt, 0, base - 0.04, bw);
+    wall(lo - bt/2 - 0.5, hi + bt/2 + 0.5, bt + 1, base - 0.04, base, cap);
   }
   const put = (p,q,h0,h1,th) => horiz ? box(p,q,c-th/2,c+th/2,h0,h1,mm,floorsG,true,true) : box(c-th/2,c+th/2,p,q,h0,h1,mm,floorsG,true,true);
-  put(lo-1, hi+1, h-0.05, h, 2.4);      // corrimano
-  put(lo-1, hi+1, base + 0.06, base + 0.11, 1.6);     // traverso basso
-  const n = Math.max(1, Math.round((hi-lo)/30));
-  for (let k=0; k<=n; k++){ const q = lo + k*(hi-lo)/n; put(q-0.8, q+0.8, base, h, 1.6); }
+  put(lo-1, hi+1, h-0.05, h, 1.6);      // corrimano piatto
+  put(lo-1, hi+1, base + 0.06, base + 0.11, 0.8);     // traverso basso
+  /* montanti a piatto largo, circa ogni metro e mezzo */
+  const n = Math.max(1, Math.round((hi-lo)/38));
+  for (let k=0; k<=n; k++){ const q = lo + k*(hi-lo)/n; put(q-1.1, q+1.1, base, h, 0.5); }
   const lenM = (hi-lo)*S, ph = h - base - 0.16;
   const pg = new THREE.PlaneGeometry(lenM, ph), uv = pg.attributes.uv;
   for (let i=0; i<uv.count; i++) uv.setX(i, uv.getX(i) * lenM / 0.13);
@@ -259,14 +266,14 @@ function floorElev(px, py){
   });
   return t === null ? .06 : t;
 }
-function buildFurn(f){
+function buildFurn(f, noCollide){
   const d = FURN[f.type]; if (!d) return;
   const g = new THREE.Group();
   d.draw(g, f.w, f.d, f.h, f.col || d.c);
   g.position.set(X(f.x), floorElev(f.x, f.y) + (d.z || 0), Z(f.y));
   g.rotation.y = -f.rot * Math.PI / 180;
   furnG.add(g);
-  if (f.h >= 0.1 && !(d.z && d.z >= 0.9)){
+  if (!noCollide && f.h >= 0.1 && !(d.z && d.z >= 0.9)){
     const th = f.rot * Math.PI / 180, c = Math.abs(Math.cos(th)), s = Math.abs(Math.sin(th));
     const hx = (f.w * c + f.d * s) / 2 / S, hy = (f.w * s + f.d * c) / 2 / S;
     collide(f.x - hx, f.x + hx, f.y - hy, f.y + hy);
@@ -282,9 +289,17 @@ function rebuild(){
   st.plan.rails.forEach(buildRail);
   st.plan.labels.forEach(buildLabel);
   st.plan.furniture.forEach(buildFurn);
+  mergeStatic(MAING.f); mergeStatic(MAING.w);     /* meno chiamate di disegno, stessa immagine */
   st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
   rebuildSys();
   syncVariants();
+}
+/* Mentre trascini un arredo ricostruisco solo gli arredi (i muri fusi e i pavimenti restano come sono).
+   Gli ostacoli per la passeggiata si aggiornano col rebuild completo, al rilascio. */
+function rebuildFurn(){
+  clearGroup(furnG);
+  st.plan.furniture.forEach(f => buildFurn(f, true));
+  st.shadowDirty = true;
 }
 /* Costruisce la seconda versione nei gruppi del confronto, riusando le stesse funzioni */
 function buildCmp(){
@@ -296,6 +311,7 @@ function buildCmp(){
     floorsG = CMPG.f; wallsG = CMPG.w; furnG = CMPG.u;
     st.plan.floors.forEach(buildFloor); st.plan.walls.forEach(buildWall); st.plan.columns.forEach(buildColumn);
     st.plan.rails.forEach(buildRail); st.plan.furniture.forEach(buildFurn);
+    mergeStatic(CMPG.f); mergeStatic(CMPG.w);
   } finally {
     st.plan = keep; floorsG = MAING.f; wallsG = MAING.w; furnG = MAING.u;
     colliders.length = nCol; st.shadowDirty = true;
@@ -313,5 +329,7 @@ const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true
   collide(303,333,45,133,staticColliders);
   collide(354,388,42,133,staticColliders);
 })();
+plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
+mergeStatic(staticG);
 
-export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, road };
+export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, rebuildFurn, road };

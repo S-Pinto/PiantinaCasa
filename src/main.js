@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { $, st } from './core.js';
 import { CMPG, MAING, camera, canvas, cmpVertical, editG, renderer, resize, scene, stage } from './scene.js';
 import { normalize } from './model.js';
-import { rebuild } from './build.js';
+import { rebuild, rebuildFurn } from './build.js';
 import { controls, initTheme, preset, setMode } from './views.js';
 import { walk, walkPointerDown, walkPointerMove, walkPointerUp } from './walk.js';
 import { buildDock, editorDown, editorMove, editorUp, histBtns } from './editor.js';
@@ -67,7 +67,7 @@ function frame(time){
     if (st.tween.t >= 1) st.tween = null;
   }
   if (st.mode === 'walk') walk(dt); else controls.update();
-  if (st.needRebuild){ rebuild(); st.needRebuild = false; }
+  if (st.needRebuild){ if (st.needRebuild === 'furn') rebuildFurn(); else rebuild(); st.needRebuild = false; }
   if (st.overlayDirty){ drawOverlay(); st.overlayDirty = false; }
   updSysSprites();
   if (st.editing){
@@ -83,9 +83,43 @@ function frame(time){
   roofFrame();
   measFrame();
   vtoolsEl.hidden = st.editing;
-  if (st.cmpId) renderSplit(); else renderView();
+  /* Disegno solo se qualcosa è cambiato: a scena ferma la scheda video riposa e l’immagine resta identica */
+  const moved = cameraMoved();
+  const wallsMoving = walls.scale.y !== st.lowTarget;
+  if (moved || st.tween || wallsMoving || renderer.shadowMap.needsUpdate || st.editing) st.redraw = Math.max(st.redraw, 2);
+  if (moved){
+    /* se la scheda video fatica, mentre ci si muove salto l’occlusione ambientale; da fermi torna */
+    if (lastMoveT) moveDt = moveDt * 0.85 + (time - lastMoveT) * 0.15;
+    lastMoveT = time;
+    if (!slowGpu && moveDt > 30 && amb.quality === 'alta') slowGpu = true;
+  } else { lastMoveT = 0; moveDt = 16; }
+  st.fastMotion = slowGpu && moved;
+  if (st.redraw > 0){
+    st.redraw--;
+    if (st.cmpId) renderSplit(); else renderView();
+  }
   requestAnimationFrame(frame);
 }
+let lastMoveT = 0, moveDt = 16, slowGpu = false, lastQ = '';
+const camKey = new Float64Array(32);
+function cameraMoved(){
+  camera.updateMatrixWorld();
+  const a = camera.matrixWorld.elements, b = camera.projectionMatrix.elements;
+  let ch = false;
+  for (let i = 0; i < 16; i++){
+    if (camKey[i] !== a[i]){ camKey[i] = a[i]; ch = true; }
+    if (camKey[16 + i] !== b[i]){ camKey[16 + i] = b[i]; ch = true; }
+  }
+  if (amb.quality !== lastQ){ lastQ = amb.quality; slowGpu = false; }
+  return ch;
+}
+/* ogni gesto o comando può cambiare la scena: ridisegno per un po’ */
+const wake = n => () => { st.redraw = Math.max(st.redraw, n); };
+['pointerdown','pointerup','wheel','keydown','keyup','input','change','click'].forEach(t => window.addEventListener(t, wake(30), { capture:true, passive:true }));
+canvas.addEventListener('pointermove', wake(4), { passive:true });
+window.addEventListener('resize', wake(10));
+document.addEventListener('visibilitychange', wake(4));
+document.fonts && document.fonts.ready.then(wake(10));
 
 /* Confronto: la stessa inquadratura disegnata due volte, una per metà schermo */
 function renderSplit(){

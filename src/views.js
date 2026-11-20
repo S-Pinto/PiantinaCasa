@@ -5,7 +5,7 @@ import { cssVar } from './dom.js';
 import { MAING, camera, canvas, cmpVertical, labelsG } from './scene.js';
 import { plate, road } from './build.js';
 import { EYE, vel } from './walk.js';
-import { TIPS, setEditing } from './editor.js';
+import { LEVEL_TIPS, TIPS, setEditing } from './editor.js';
 
 /* Tema chiaro/scuro, camera, modalità di visualizzazione e opzioni di vista. */
 
@@ -58,7 +58,7 @@ function preset(m){
 function applyLook(){ camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ'); }
 function setHint(){
   let t = hints[st.mode];
-  if (st.editing) t = st.tool !== 'select' ? TIPS[st.tool] : (st.sel ? '' : hints.edit);
+  if (st.editing) t = st.tool !== 'select' ? TIPS[st.tool] : (st.sel ? '' : (LEVEL_TIPS[st.level] || hints.edit));
   if (st.cmpId) t = '';
   hintEl.textContent = t || ''; hintEl.hidden = !t;
 }

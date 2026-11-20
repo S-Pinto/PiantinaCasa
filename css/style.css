@@ -74,6 +74,32 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
   .sep{ width:1px; height:34px; margin:0 3px; }
 }
 
+/* ---------- livelli di modifica ---------- */
+.levels{ position:absolute; z-index:3; left:8px; top:62px; display:flex; gap:4px; padding:5px; border-radius:16px; }
+.levels button{ display:flex; align-items:center; gap:7px; height:40px; padding:0 13px 0 10px; border:0; border-radius:11px; background:transparent; cursor:pointer; font-size:13.5px; font-weight:600; white-space:nowrap; }
+.levels button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
+.levels button:not([aria-pressed="true"]):hover{ background:var(--line); }
+body[data-editing="1"] .dock{ top:116px; max-height:calc(100% - 184px); }
+.dock .sep.grow{ flex:1 0 1px; min-height:1px; }
+@media (min-width:720px){
+  body[data-level="pareti"] .dock{ display:grid; grid-template-columns:66px 66px; align-content:start; }
+  body[data-level="pareti"] .dock .sep{ grid-column:1 / -1; }
+}
+.tl.snap[aria-pressed="true"]{ background:transparent; color:#d61f73; box-shadow:inset 0 0 0 2px #d61f73; }
+:root[data-theme="dark"] .tl.snap[aria-pressed="true"]{ color:#ff6fae; box-shadow:inset 0 0 0 2px #ff6fae; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tl.snap[aria-pressed="true"]{ color:#ff6fae; box-shadow:inset 0 0 0 2px #ff6fae; } }
+.readout{ position:absolute; left:0; top:0; z-index:6; padding:6px 11px; border-radius:10px; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; white-space:pre; pointer-events:none;
+  color:#fff; background:rgba(214,31,115,.92); box-shadow:0 3px 12px rgba(0,0,0,.18); }
+@media (max-width:719px){
+  .levels{ right:8px; justify-content:space-between; }
+  .levels button{ flex:1; flex-direction:column; justify-content:center; gap:2px; height:50px; padding:0 2px; font-size:11px; }
+  body[data-editing="1"] .dock{ top:auto; max-height:none; }
+  body[data-editing="1"] .hint{ top:128px; }
+  /* in modifica la vista è sempre la pianta: sul telefono nascondo i pulsanti delle viste, così annulla/ripeti e Fine non li coprono */
+  body[data-editing="1"] .topbar .seg{ display:none; }
+  .dock .sep.grow{ flex:0 0 1px; min-height:34px; }
+}
+
 /* ---------- scheda proprietà ---------- */
 .sheet{ position:absolute; z-index:4; right:8px; top:62px; width:min(330px,calc(100% - 16px)); max-height:calc(100% - 130px); overflow:auto; border-radius:16px; padding:0 14px 14px; }
 .shead{ position:sticky; top:0; display:flex; align-items:center; gap:6px; padding:10px 0 8px; background:inherit; backdrop-filter:inherit; -webkit-backdrop-filter:inherit; z-index:1; }

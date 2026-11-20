@@ -3,11 +3,11 @@ import { S, X, Z, st } from './core.js';
 import { editG } from './scene.js';
 import { isH, wallT } from './model.js';
 import { clearGroup, labelWpx } from './build.js';
-import { getHandles, selItem } from './editor.js';
+import { getHandles, selItem, snapLines } from './editor.js';
 import { sysOverlay } from './impianti.js';
 
 /* ---------- evidenziazioni 3D ---------- */
-const ACC = 0x2f8fff, ORG = 0xff9f1a;
+const ACC = 0x2f8fff, ORG = 0xff9f1a, SNAPC = 0xff2d8a;
 const ovMat = (c,o) => new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:o, depthTest:false, side:THREE.DoubleSide });
 function ovRot(cx, cy, wp, hp, rot, h, c, o){
   const m = new THREE.Mesh(new THREE.BoxGeometry(wp*S, h, hp*S), ovMat(c, o));
@@ -73,6 +73,11 @@ function drawOverlay(){
     getHandles().forEach(h => ovHandle(h.x, h.y, col));
   }
   sysOverlay(it);
+  /* linee guida dell’aggancio: mostrano a cosa si è allineato l’elemento */
+  snapLines.forEach(l => {
+    if (l.ax === 'x') ovBox(l.v - .45, l.v + .45, l.a, l.b, .5, .52, SNAPC, .95);
+    else ovBox(l.a, l.b, l.v - .45, l.v + .45, .5, .52, SNAPC, .95);
+  });
   if (st.draft){
     if (st.draft.kind === 'rect'){
       const x0 = Math.min(st.draft.x0,st.draft.x1), x1 = Math.max(st.draft.x0,st.draft.x1), y0 = Math.min(st.draft.y0,st.draft.y1), y1 = Math.max(st.draft.y0,st.draft.y1);
