@@ -6,11 +6,22 @@ import { FURN } from './furniture.js';
 import { isH } from './model.js';
 import { labelWpx } from './build.js';
 import { setHint } from './views.js';
-import { clearTxt, clearances, deleteSel, duplicateSel, fmtLen, furnHalf, mutate, obstacleFaces, rightAngle, selItem, setSel, splitRail, wallGaps } from './editor.js';
+import { clearTxt, clearances, deleteSel, duplicateSel, fmtLen, furnHalf, mutate, obstacleFaces, revealSel, rightAngle, selItem, selectStacked, setSel, splitRail, wallGaps } from './editor.js';
 import { RUNK, SYS, buildRunCatalog, buildSysCatalog, runKind, setCatLayer, sysProps, sysType } from './impianti.js';
 
 /* ---------- scheda delle proprietà ---------- */
-const propsEl = $('props'), sheetEl = $('sheet');
+const propsEl = $('props'), sheetEl = $('sheet'), actsEl = $('sacts'), stackEl = $('sstack');
+
+/* Sul telefono la scheda sta in basso sopra la pianta: quando scegli qualcosa resta ridotta a una riga
+   (nome e pulsanti principali), così l'arredo si vede e si trascina; le altre opzioni si aprono col titolo. */
+const narrowUI = () => !!(window.matchMedia && matchMedia('(max-width:719px)').matches);
+function setSheetCollapsed(c){
+  sheetEl.dataset.collapsed = c ? '1' : '0';
+  $('scollapse').setAttribute('aria-label', c ? 'Apri la scheda' : 'Riduci la scheda');
+  $('scollapse').title = c ? 'Altre opzioni' : 'Riduci';
+  $('scollapse').style.transform = c ? 'rotate(180deg)' : '';
+}
+let sheetKey = '';
 
 const PALETTE = ['#ffffff','#efede8','#e6d9c3','#d3bf9a','#c4a98a','#b9c7b2','#9db4c9','#d5dde2','#9aa5b1','#69707b','#3a4048','#1d252d','#d98b73','#a63a2b','#2f6f8f','#4b7f52','#e2bd4f','#e8c6c6'];
 const thumbCache = {};
@@ -129,7 +140,7 @@ function buildCatalog(){
       const b = el('button','tx none', FURN[k].n); b.type = 'button';
       b.style.height = 'auto'; b.style.padding = '12px 4px'; b.style.lineHeight = '1.15';
       b.setAttribute('aria-pressed', String(k === st.furnType));
-      b.addEventListener('click', () => { st.furnType = k; refreshProps(); });
+      b.addEventListener('click', () => { st.furnType = k; refreshProps(); if (narrowUI()) setSheetCollapsed(true); });
       row.appendChild(b);
     });
     propsEl.appendChild(row);
@@ -137,12 +148,14 @@ function buildCatalog(){
   propsEl.appendChild(note('Scegli un arredo e tocca la pianta per metterlo. Poi lo sposti trascinandolo, lo ruoti col cerchio o dalla scheda, e puoi cambiarne misure e colore.'));
 }
 function refreshProps(){
-  propsEl.textContent = '';
+  propsEl.textContent = ''; actsEl.textContent = ''; stackEl.textContent = ''; stackEl.hidden = true;
   const it = (st.editing && st.tool === 'select') ? selItem() : null;
   const cat = st.editing && st.tool === 'furn', scat = st.editing && st.tool === 'sys', rcat = st.editing && st.tool === 'run';
   sheetEl.hidden = !(it || cat || scat || rcat);
+  const key = it ? it.type + ':' + st.sel.id + ':' + (st.sel.i || 0) : cat ? 'cat' : scat ? 'scat' : rcat ? 'rcat' : '';
+  if (key !== sheetKey){ sheetKey = key; if (key && narrowUI()) setSheetCollapsed(!!it); }
   setHint();
-  if (cat){ $('stitle').textContent = 'Arredi'; buildCatalog(); return; }
+  if (cat){ $('stitle').textContent = FURN[st.furnType] ? 'Aggiungi: ' + FURN[st.furnType].n : 'Arredi'; buildCatalog(); return; }
   if (scat){ setCatLayer(SYS[sysType].l); $('stitle').textContent = 'Impianti: ' + SYS[sysType].n; buildSysCatalog(); return; }
   if (rcat){ $('stitle').textContent = 'Tracciati: ' + RUNK[runKind].n; buildRunCatalog(); return; }
   if (!it) return;
@@ -236,6 +249,7 @@ function refreshProps(){
     acts.append(btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
   } else if (it.type === 'furn'){
     const f = it.obj; title.textContent = FURN[f.type].n;
+    stackPicker(f);
     add(fld('Larghezza (m)', numIn(f.w, .05, .1, v => mutate(() => { f.w = clamp(v, .1, 8); }))));
     add(fld('Profondità (m)', numIn(f.d, .05, .1, v => mutate(() => { f.d = clamp(v, .1, 8); }))));
     add(fld('Altezza (m)', numIn(f.h, .05, .01, v => mutate(() => { f.h = clamp(v, .01, 4); }))));
@@ -246,7 +260,7 @@ function refreshProps(){
     }
     add(section('Colore'));
     add(colorRow(f.col, v => mutate(() => { f.col = v || undefined; }), true));
-    acts.append(btn('Ruota di 90°', () => mutate(() => { f.rot = (f.rot + 90) % 360; })), btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
+    acts.append(btn('Ruota 90°', () => mutate(() => { f.rot = (f.rot + 90) % 360; })), btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
   } else if (it.type === 'sys' || it.type === 'run'){
     sysProps(it, add, acts, title);
   } else if (it.type === 'label'){
@@ -255,14 +269,24 @@ function refreshProps(){
     add(fld('Larghezza (m)', numIn(labelWpx(l)*S, .1, .3, v => mutate(() => { l.w = clamp(v/S*0.03, .3, 8); }))));
     acts.append(btn('Duplica', duplicateSel), btn('Elimina', deleteSel, 'danger'));
   }
-  add(acts);
+  actsEl.appendChild(acts);
+}
+/* arredi uno sopra l'altro nel punto toccato (es. tavolo e sedie sotto la pergola): si sceglie dall'elenco */
+function stackPicker(f){
+  const ids = (st.stack || []).filter(id => st.plan.furniture.some(o => o.id === id));
+  if (ids.length < 2 || ids.indexOf(f.id) < 0) return;
+  stackEl.appendChild(el('span', 'sl0', 'Uno sull’altro:'));
+  ids.forEach(id => {
+    const o = st.plan.furniture.find(q => q.id === id);
+    const b = el('button', 'chip', FURN[o.type].n); b.type = 'button'; b.setAttribute('aria-pressed', String(id === f.id));
+    b.addEventListener('click', () => { if (id !== f.id) selectStacked(id); });
+    stackEl.appendChild(b);
+  });
+  stackEl.hidden = false;
 }
 $('sclose').addEventListener('click', () => setSel(null));
-$('scollapse').addEventListener('click', () => {
-  const c = sheetEl.dataset.collapsed === '1';
-  sheetEl.dataset.collapsed = c ? '0' : '1';
-  $('scollapse').setAttribute('aria-label', c ? 'Riduci la scheda' : 'Apri la scheda');
-  $('scollapse').style.transform = c ? '' : 'rotate(180deg)';
-});
+function toggleSheet(){ setSheetCollapsed(sheetEl.dataset.collapsed !== '1'); revealSel(); }
+$('scollapse').addEventListener('click', toggleSheet);
+$('stitle').addEventListener('click', () => { if (narrowUI()) toggleSheet(); });
 
-export { propsEl, refreshProps, sheetEl };
+export { narrowUI, propsEl, refreshProps, setSheetCollapsed, sheetEl };

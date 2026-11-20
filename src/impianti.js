@@ -7,7 +7,7 @@ import { isH, uid, wallT } from './model.js';
 import { clearGroup, floorElev, rebuild } from './build.js';
 import { GRID, deleteSel, duplicateSel, flash, ground, mutate, opt, pushUndo, selItem, setSel, tolPx } from './editor.js';
 import { ACC, ORG, ovBox } from './overlay.js';
-import { propsEl, refreshProps, sheetEl } from './props.js';
+import { narrowUI, propsEl, refreshProps, setSheetCollapsed } from './props.js';
 import { toggleMenu, toggleVar } from './variants.js';
 
 /* Impianti: elettrico, idraulico e domotica. Punti (st.plan.sys) e tracciati (st.plan.runs), livelli accendibili,
@@ -348,13 +348,8 @@ $('qtycsv').addEventListener('click', async () => {
 let sysType = 'presa', runKind = 'el';
 let catLayer = 'el';
 function setCatLayer(l){ catLayer = l; }
-const narrowUI = () => !!(window.matchMedia && matchMedia('(max-width:719px)').matches);
 /* Sul telefono la scheda copre la pianta: dopo la scelta la riduco, così si può toccare dove metterlo */
-function collapseSheetIfNarrow(){
-  if (!narrowUI()) return;
-  sheetEl.dataset.collapsed = '1';
-  $('scollapse').setAttribute('aria-label', 'Apri la scheda'); $('scollapse').style.transform = 'rotate(180deg)';
-}
+function collapseSheetIfNarrow(){ if (narrowUI()) setSheetCollapsed(true); }
 function buildSysCatalog(){
   const tabs = el('div','segs lyt');
   Object.keys(LAYERS).forEach(l => {

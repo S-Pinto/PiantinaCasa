@@ -105,8 +105,26 @@ body[data-editing="1"] .dock{ top:116px; max-height:calc(100% - 184px); }
 .shead{ position:sticky; top:0; display:flex; align-items:center; gap:6px; padding:10px 0 8px; background:inherit; backdrop-filter:inherit; -webkit-backdrop-filter:inherit; z-index:1; }
 .shead .pt{ flex:1; margin:0; font-size:15px; font-weight:700; }
 .sheet[data-collapsed="1"] #props{ display:none; }
+#sacts:empty{ display:none; }
+.sstack{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 6px; }
+.sstack .sl0{ white-space:nowrap; font-size:12px; font-weight:700; color:var(--muted); margin-right:2px; }
+.chip{ min-height:34px; padding:4px 11px; border:1px solid var(--line); border-radius:999px; background:transparent; cursor:pointer; font-size:12.5px; font-weight:600; }
+.chip[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+/* mentre trascini un elemento la scheda si fa da parte */
+.sheet, .hint{ transition:opacity .15s; }
+body[data-dragging="1"] .sheet{ opacity:.08; pointer-events:none; }
 @media (max-width:719px){
   .sheet{ right:8px; left:8px; top:auto; bottom:80px; width:auto; max-height:46vh; }
+  /* ridotta: solo nome, elenco degli arredi sovrapposti e pulsanti principali, in poco spazio */
+  .sheet[data-collapsed="1"]{ padding:0 10px 8px; }
+  .sheet[data-collapsed="1"] .shead{ padding:6px 0 4px; }
+  .sheet[data-collapsed="1"] .shead .pt{ font-size:14px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sheet[data-collapsed="1"] .sstack{ flex-wrap:nowrap; overflow-x:auto; margin-bottom:4px; }
+  .sheet[data-collapsed="1"] .sstack .chip{ flex:none; }
+  .sheet[data-collapsed="1"] .sstack .sl0{ display:none; }
+  .sheet[data-collapsed="1"] .acts{ flex-wrap:nowrap; margin-top:2px; }
+  .sheet[data-collapsed="1"] .acts .btn{ flex:1; min-height:38px; padding:6px 6px; white-space:nowrap; }
+  body[data-dragging="1"] .hint{ opacity:0; }
 }
 .fld{ display:grid; grid-template-columns:1fr 132px; align-items:center; gap:10px; margin:8px 0; font-size:14px; }
 .fld input,.fld select{ width:100%; min-height:40px; padding:6px 10px; border:1px solid var(--line); border-radius:10px; background:transparent; }
