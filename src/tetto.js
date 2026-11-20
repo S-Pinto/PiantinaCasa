@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { $, H, S, X, Z, st } from './core.js';
 import { MAING, scene } from './scene.js';
 import { wallT } from './model.js';
+import { mergeStatic } from './prestazioni.js';
 import { roofBase, roofMatFor } from './contesto.js';
 
 /* Il tetto dell’attico, da mostrare o nascondere: solaio piano sopra le stanze, a quadrotti chiari
@@ -52,6 +53,7 @@ function buildRoof(){
   const cap = new THREE.Mesh(new THREE.PlaneGeometry(cw, cd), roofMatFor(cw, cd));
   cap.rotation.x = -Math.PI / 2; cap.position.set(X((297.5 + 395.5) / 2), H + SLAB + 2.41, Z((38 + 168) / 2));
   roofG.add(cap);
+  mergeStatic(roofG);
   st.shadowDirty = true;
 }
 

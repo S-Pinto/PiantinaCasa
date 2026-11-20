@@ -75,4 +75,5 @@ function initPano(){
   });
 }
 
+
 export { initPano };

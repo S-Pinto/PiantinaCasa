@@ -6,6 +6,7 @@ import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMat
 import { FURN } from './furniture.js';
 import { isH, variantPlan, wallT } from './model.js';
 import { syncVariants } from './variants.js';
+import { mergeStatic } from './prestazioni.js';
 import { rebuildSys } from './impianti.js';
 
 /* ------------------------- Utilità di costruzione ------------------------- */
@@ -285,6 +286,7 @@ function rebuild(){
   st.plan.rails.forEach(buildRail);
   st.plan.labels.forEach(buildLabel);
   st.plan.furniture.forEach(buildFurn);
+  mergeStatic(MAING.f); mergeStatic(MAING.w);     /* meno chiamate di disegno, stessa immagine */
   st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
   rebuildSys();
   syncVariants();
@@ -299,6 +301,7 @@ function buildCmp(){
     floorsG = CMPG.f; wallsG = CMPG.w; furnG = CMPG.u;
     st.plan.floors.forEach(buildFloor); st.plan.walls.forEach(buildWall); st.plan.columns.forEach(buildColumn);
     st.plan.rails.forEach(buildRail); st.plan.furniture.forEach(buildFurn);
+    mergeStatic(CMPG.f); mergeStatic(CMPG.w);
   } finally {
     st.plan = keep; floorsG = MAING.f; wallsG = MAING.w; furnG = MAING.u;
     colliders.length = nCol; st.shadowDirty = true;
@@ -316,5 +319,7 @@ const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true
   collide(303,333,45,133,staticColliders);
   collide(354,388,42,133,staticColliders);
 })();
+plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
+mergeStatic(staticG);
 
 export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, road };

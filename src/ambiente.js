@@ -262,6 +262,8 @@ function applyAmbLook(){
   /* luci di casa */
   const k = amb.lights === 'on' ? 1 : amb.lights === 'off' ? 0 : 1 - smooth(-3, 7, el);
   roomLights.children.forEach(l => { l.intensity = l.userData.base * k; });
+  /* di giorno le luci di casa sono spente: le tolgo del tutto, così ogni pixel non le calcola a vuoto */
+  roomLights.visible = k > 0.001;
   glassMat.emissive.copy(WARM); glassMat.emissiveIntensity = 0.35 * k;
   if (bloomPass){ bloomPass.strength = 0.1 + 0.25 * (1 - day); bloomPass.threshold = day > 0.5 ? 1.0 : 0.85; }
   st.shadowDirty = true;
@@ -292,7 +294,7 @@ function ambFrame(dt){
   else { renderer.shadowMap.autoUpdate = false; if (st.shadowDirty){ renderer.shadowMap.needsUpdate = true; st.shadowDirty = false; } }
 }
 function renderView(){
-  if (composer && QUALITY[amb.quality].post && !st.editing) composer.render();
+  if (composer && QUALITY[amb.quality].post && !st.editing){ aoPass.enabled = !st.fastMotion; composer.render(); }
   else renderer.render(scene, camera);
 }
 
@@ -336,5 +338,6 @@ function initAmbiente(){
   applyQuality();
   syncAmbUi();
 }
+
 
 export { amb, ambFrame, ambState, initAmbiente, renderView };

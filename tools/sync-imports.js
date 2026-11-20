@@ -11,7 +11,7 @@ const strip = s => s.replace(/^import\s.*?\sfrom\s+'[^']+';[ \t]*\n/gm, '').repl
 /* moduli aggiuntivi di three.js (three/addons/...) */
 const ADDONS = { OrbitControls:'controls/OrbitControls.js', Sky:'objects/Sky.js', EffectComposer:'postprocessing/EffectComposer.js',
   RenderPass:'postprocessing/RenderPass.js', GTAOPass:'postprocessing/GTAOPass.js', UnrealBloomPass:'postprocessing/UnrealBloomPass.js',
-  OutputPass:'postprocessing/OutputPass.js' };
+  OutputPass:'postprocessing/OutputPass.js', mergeGeometries:'utils/BufferGeometryUtils.js' };
 const mods = {};
 const BROWSER = new Set(Object.getOwnPropertyNames(globalThis).concat(['document','window','navigator','localStorage','requestAnimationFrame','getComputedStyle','matchMedia','ResizeObserver','MutationObserver','FileReader','Blob','URL','fetch','console','setTimeout','clearTimeout','Promise','location','devicePixelRatio','HTMLElement','performance']));
 for (const f of files){
@@ -38,7 +38,7 @@ for (const f in mods){
   }
   m.imp = imp;
 }
-const ORDER = ['core.js','dom.js','scene.js','textures.js','materials.js','furniture.js','model.js','build.js','views.js','walk.js','editor.js','overlay.js','props.js','variants.js','storage.js','ambiente.js','contesto.js','tetto.js','misure.js','panorama.js','main.js','impianti.js'];
+const ORDER = ['core.js','dom.js','scene.js','textures.js','materials.js','furniture.js','model.js','build.js','views.js','walk.js','editor.js','overlay.js','props.js','variants.js','storage.js','prestazioni.js','ambiente.js','contesto.js','tetto.js','misure.js','panorama.js','main.js','impianti.js'];
 const rank = f => { const i = ORDER.indexOf(f); return i < 0 ? 99 : i; };
 for (const f in mods){
   const m = mods[f], head = [];

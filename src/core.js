@@ -52,6 +52,8 @@ const st = {
   artifactApi: null,     // null = non ancora noto, false = non disponibile
   rev: 0,                // cresce a ogni ricostruzione della scena
   shadowDirty: true,     // le ombre vanno ricalcolate al prossimo fotogramma
+  redraw: 180,           // fotogrammi ancora da disegnare: se la scena è ferma non ridisegno
+  fastMotion: false,     // su schede video lente, mentre la camera si muove salto l’occlusione ambientale
   pano: false            // Panorama 3D attivo
 };
 

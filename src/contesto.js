@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { X, Z, st } from './core.js';
 import { labelsG, scene } from './scene.js';
 import { plate, road } from './build.js';
+import { mergeStatic } from './prestazioni.js';
 import { ambState } from './ambiente.js';
 
 /* Il palazzo e il quartiere attorno, ricostruiti dalle viste di Google Earth (Brindisi):
@@ -272,7 +273,7 @@ function buildContext(){
 
 let ctxBuilt = false, ctxRev = -1, ctxOn = null;
 function contextFrame(on){
-  if (on && !ctxBuilt){ buildContext(); ctxBuilt = true; }
+  if (on && !ctxBuilt){ buildContext(); mergeStatic(ctxG); ctxBuilt = true; }
   if (on !== ctxOn){
     ctxOn = on; ctxG.visible = on; plate.visible = road.visible = !on;
     ctxRev = -1; st.shadowDirty = true;
