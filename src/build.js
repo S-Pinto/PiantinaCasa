@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { H, HEAD, S, SILL, X, Z, clamp, pointInPoly, st } from './core.js';
+import { H, HEAD, S, SILL, WELL, X, Z, clamp, pointInPoly, st } from './core.js';
 import { CMPG, MAING, labelsG, staticG } from './scene.js';
 import { TEXDEF, toTex } from './textures.js';
 import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMat, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop } from './materials.js';
@@ -332,19 +332,41 @@ function buildCmp(){
 }
 
 /* Elementi fissi: base, strada, scale */
-const plate = box(-130,830,20,450,-0.4,-0.02,mat('#d7dee4'),staticG,false,true);
+/* lastra (o piano) con il buco del pozzo scala: in metri, il buco in px della piantina */
+/* poligono in metri [[x,z],…] con il buco del pozzo, che deve starci dentro */
+function holedShape(poly){
+  const sh = new THREE.Shape();
+  poly.forEach((p, i) => { if (i === 0) sh.moveTo(p[0], -p[1]); else sh.lineTo(p[0], -p[1]); });
+  const hx0 = X(WELL.x0), hx1 = X(WELL.x1), hz0 = Z(WELL.y0), hz1 = Z(WELL.y1);
+  const h = new THREE.Path();
+  h.moveTo(hx0, -hz0); h.lineTo(hx0, -hz1); h.lineTo(hx1, -hz1); h.lineTo(hx1, -hz0); h.lineTo(hx0, -hz0);
+  sh.holes.push(h);
+  return sh;
+}
+const rectPoly = (x0, x1, z0, z1) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]];
+function holedSlab(poly, y0, y1, m){
+  const g = new THREE.ExtrudeGeometry(holedShape(poly), { depth:y1 - y0, bevelEnabled:false }); g.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(g, m); mesh.position.y = y0; mesh.receiveShadow = true;
+  return mesh;
+}
+function holedPlane(poly, y, m){
+  const g = new THREE.ShapeGeometry(holedShape(poly)); g.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(g, m); mesh.position.y = y; mesh.receiveShadow = true;
+  return mesh;
+}
+const plate = holedSlab(rectPoly(X(-130), X(830), Z(20), Z(450)), -0.4, -0.02, mat('#d7dee4')); staticG.add(plate);
 const road  = box(-130,830,378,450,-0.05,-0.01,mat('#a9b3bc'),staticG,false,true);
-/* Scala del vano: a U con i gradini a ventaglio nei due angoli (quasi a chiocciola),
-   pianerottolo davanti all'ascensore e alla porta d'ingresso, pianerottolo d'arrivo in alto */
-function stairStep(pts, top){
+/* Scala condominiale: dal pianerottolo (al livello del pavimento di casa) scende nel pozzo accanto
+   all’ascensore, gira con i gradini a ventaglio, corre lungo il muro ovest e rigira sotto il pianerottolo */
+function stairStep(pts, y0, y1){
   const sh = new THREE.Shape();
   pts.forEach((p, i) => { const x = X(p[0]), y = -Z(p[1]); if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y); });
-  const g = new THREE.ExtrudeGeometry(sh, { depth:top, bevelEnabled:false }); g.rotateX(-Math.PI / 2);
-  const m = new THREE.Mesh(g, stairMat); m.castShadow = m.receiveShadow = true;
+  const g = new THREE.ExtrudeGeometry(sh, { depth:y1 - y0, bevelEnabled:false }); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, stairMat); m.position.y = y0; m.castShadow = m.receiveShadow = true;
   staticG.add(m);
 }
 /* spicchio di un angolo: dal perno P fra gli angoli a0 e a1 (gradi, 0 = est, 90 = sud), dentro il rettangolo r */
-function winder(P, r, a0, a1, top){
+function winder(P, r, a0, a1, y0, y1){
   const hit = a => {
     const dx = Math.cos(a * Math.PI / 180), dy = Math.sin(a * Math.PI / 180);
     let t = Infinity;
@@ -352,38 +374,48 @@ function winder(P, r, a0, a1, top){
     if (dy > 1e-6) t = Math.min(t, (r[3] - P[1]) / dy); if (dy < -1e-6) t = Math.min(t, (r[2] - P[1]) / dy);
     return [P[0] + dx * t, P[1] + dy * t];
   };
-  const pts = [P, hit(a0)];
+  const mid = [];
   [[r[0], r[2]], [r[1], r[2]], [r[1], r[3]], [r[0], r[3]]].forEach(c => {
     let ang = Math.atan2(c[1] - P[1], c[0] - P[0]) * 180 / Math.PI; if (ang < a0 - 1e-6) ang += 360;
-    if (ang > a0 + 1e-6 && ang < a1 - 1e-6) pts.push([c, ang]);
+    if (ang > a0 + 1e-6 && ang < a1 - 1e-6) mid.push([c, ang]);
   });
-  const mid = pts.slice(2).sort((p, q) => p[1] - q[1]).map(p => p[0]);
-  stairStep([P, pts[1], ...mid, hit(a1)], top);
+  mid.sort((p, q) => p[1] - q[1]);
+  stairStep([P, hit(a0), ...mid.map(p => p[0]), hit(a1)], y0, y1);
 }
+const wellMat = mat('#e6e2da'), railMat = mat('#4a5058', { roughness:.45, metalness:.3 });
 (function stairs(){
-  const N = 18, rise = H / N, yTurn = 72, yLow = 133;
+  const W = WELL, rise = H / 18, bottom = -H, yS = 108, yN = 72;
   let k = 0;
-  const top = () => (++k) * rise;
-  /* rampa ovest, si sale verso nord */
-  const tw = (yLow - yTurn) / 6;
-  for (let i = 0; i < 6; i++) box(303, 333, yLow - (i + 1) * tw, yLow - i * tw, 0, top(), stairMat, staticG);
-  /* primo angolo: tre gradini a ventaglio attorno allo spigolo interno */
-  for (let i = 0; i < 3; i++) winder([333, yTurn], [303, 333, 42, yTurn], 180 + i * 30, 210 + i * 30, top());
-  /* gradino dritto lungo il muro nord */
-  box(333, 354, 42, yTurn, 0, top(), stairMat, staticG);
-  /* secondo angolo */
-  for (let i = 0; i < 3; i++) winder([354, yTurn], [354, 388, 42, yTurn], 270 + i * 30, 300 + i * 30, top());
-  /* rampa est, si sale verso sud, fino al pianerottolo d'arrivo */
-  const te = 10.2;
-  for (let i = 0; i < 4; i++) box(354, 388, yTurn + i * te, yTurn + (i + 1) * te, 0, top(), stairMat, staticG);
-  box(354, 388, yTurn + 4 * te, yLow, 0, H - 0.02, stairMat, staticG);
-  /* parapetto pieno che chiude il pozzo fra le due rampe */
-  box(336, 351, yTurn, yLow, 0, H * 0.55, stairMat, staticG);
-  collide(303, 333, yTurn, yLow, staticColliders);
-  collide(303, 388, 42, yTurn, staticColliders);
-  collide(336, 388, yTurn, yLow, staticColliders);
+  const top = () => -(++k) * rise;
+  /* fondo e pareti del pozzo, fino al piano di sotto */
+  box(W.x0, W.x1, W.y0, W.y1, bottom - 0.1, bottom, stairMat, staticG);
+  box(W.x0 - 4, W.x0, W.y0 - 4, W.y1 + 4, bottom, 0, wellMat, staticG);
+  box(W.x0, W.x1 + 4, W.y0 - 4, W.y0, bottom, 0, wellMat, staticG);
+  box(W.x0, W.x1 + 4, W.y1, W.y1 + 4, bottom, 0, wellMat, staticG);
+  box(W.x1, W.x1 + 4, yN, W.y1, bottom, 0, wellMat, staticG);        /* sotto il pianerottolo la scala prosegue */
+  box(W.x1, W.x1 + 4, W.y0, yN, -0.3, 0, wellMat, staticG);
+  /* primo ventaglio: si entra dal pianerottolo andando a ovest e si gira verso nord */
+  for (let i = 0; i < 3; i++) winder([W.x1, yS], [W.x0, W.x1, yS, W.y1], 90 + i * 30, 120 + i * 30, bottom, top());
+  /* rampa dritta lungo il muro ovest */
+  const tr = (yS - yN) / 4;
+  for (let i = 0; i < 4; i++) box(W.x0, W.x1, yS - (i + 1) * tr, yS - i * tr, bottom, top(), stairMat, staticG);
+  /* secondo ventaglio: si gira verso est, sotto il pianerottolo */
+  for (let i = 0; i < 3; i++) winder([W.x1, yN], [W.x0, W.x1, W.y0, yN], 180 + i * 30, 210 + i * 30, bottom, top());
+  for (let i = 0; i < 2; i++) box(W.x1 + 4, W.x1 + 30, W.y0, yN, bottom, top(), stairMat, staticG);
+  /* ringhiera sul bordo del pozzo, lato pianerottolo (si lascia libero l’imbocco della scala) */
+  const rail = (x0, x1, y0, y1) => {
+    box(x0, x1, y0, y1, 0.96, 1.0, railMat, staticG);
+    const horiz = (x1 - x0) > (y1 - y0), len = horiz ? x1 - x0 : y1 - y0, n = Math.max(1, Math.round(len / 3.2));
+    for (let i = 0; i <= n; i++){
+      const q = (horiz ? x0 : y0) + i * len / n;
+      if (horiz) box(q - 0.3, q + 0.3, y0, y1, 0, 0.96, railMat, staticG, false);
+      else box(x0, x1, q - 0.3, q + 0.3, 0, 0.96, railMat, staticG, false);
+    }
+  };
+  rail(W.x1 + 1, W.x1 + 2.2, W.y0, yS);
+  collide(W.x0, W.x1 + 2.2, W.y0, yS, staticColliders);
 })();
 plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
 mergeStatic(staticG);
 
-export { buildCmp, clearGroup, colliders, floorElev, labelWpx, plate, rebuild, rebuildFurn, road };
+export { buildCmp, clearGroup, colliders, floorElev, holedPlane, holedSlab, labelWpx, plate, rebuild, rebuildFurn, road };
