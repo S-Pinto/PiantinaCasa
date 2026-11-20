@@ -1,6 +1,6 @@
 # PiantinaCasa
 
-Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate.
+Piantina 3D dell’appartamento di Via Verona: vista in prospettiva, pianta dall’alto, passeggiata in prima persona, editor di muri, aperture, pavimenti e arredi, versioni di arredo da confrontare affiancate. Luce del giorno, del tramonto e della notte con il sole nella posizione vera, misure delle stanze, metro, e un Panorama 3D a tutto schermo con il palazzo e il quartiere attorno.
 
 ## Come aprirla
 
@@ -44,8 +44,18 @@ tools/              strumenti per chi sviluppa
 | `props.js` | scheda delle proprietà dell’elemento selezionato |
 | `variants.js` | menu opzioni e pannello delle versioni di arredo |
 | `storage.js` | salvataggi, import/export, file HTML da inviare |
+| `ambiente.js` | ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione |
+| `contesto.js` | il palazzo sotto l’attico, le unità vicine, strade, alberi e palazzine del quartiere |
+| `misure.js` | quote interne delle stanze, superfici, ingombro totale, metro a due punti |
+| `panorama.js` | Panorama 3D: vista cinematografica a tutto schermo, foto in PNG |
 
 three.js (r187) arriva dalla CDN jsDelivr tramite la *import map* in `index.html`.
+
+### Luce e qualità
+
+Il pulsante **Luce** (a destra) sceglie giorno, tramonto o notte, oppure un’ora precisa con il cursore, e la stagione. Il sole segue il percorso vero per la latitudine di Roma con il nord in alto nella piantina; se la casa è orientata diversamente si corregge con **Orientamento del nord**. Di notte si accendono le luci delle stanze e le finestre del quartiere.
+
+Colori e luci sono fisicamente corretti (gestione del colore attiva, tone mapping *Khronos PBR Neutral*, che non altera i colori di pavimenti e finiture). La **qualità grafica** ha tre livelli: *Alta* aggiunge occlusione ambientale (GTAO), bagliore delle luci e ombre delle lampade; *Media* (predefinita sul telefono) tiene le ombre del sole; *Leggera* abbassa la risoluzione. Le ombre si ricalcolano solo quando la scena cambia, quindi da ferma la piantina non consuma batteria per le ombre.
 
 ### Il modello della casa
 

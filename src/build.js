@@ -243,6 +243,7 @@ function buildLabel(l){
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wm, wm*0.25), m);
   mesh.rotation.set(-Math.PI/2, 0, 0);
   mesh.position.set(X(l.x), l.g ? 0.0 : 0.085, Z(l.y));
+  mesh.userData.street = !!l.g;      /* le scritte della strada scendono al livello del suolo (contesto.js) */
   mesh.renderOrder = 2;
   labelsG.add(mesh);
 }
@@ -280,6 +281,7 @@ function rebuild(){
   st.plan.rails.forEach(buildRail);
   st.plan.labels.forEach(buildLabel);
   st.plan.furniture.forEach(buildFurn);
+  st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
   syncVariants();
 }
 /* Costruisce la seconda versione nei gruppi del confronto, riusando le stesse funzioni */
@@ -294,7 +296,7 @@ function buildCmp(){
     st.plan.rails.forEach(buildRail); st.plan.furniture.forEach(buildFurn);
   } finally {
     st.plan = keep; floorsG = MAING.f; wallsG = MAING.w; furnG = MAING.u;
-    colliders.length = nCol;
+    colliders.length = nCol; st.shadowDirty = true;
   }
 }
 

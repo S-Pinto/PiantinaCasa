@@ -49,7 +49,10 @@ const st = {
   lowTarget: 1, showFurn: true, furnType: 'divano',
   viewOnlyFile: false, publishedTs: 0, publishedJson: '',
   planKey: '',           // identifica la piantina pubblicata (per i salvataggi locali)
-  artifactApi: null      // null = non ancora noto, false = non disponibile
+  artifactApi: null,     // null = non ancora noto, false = non disponibile
+  rev: 0,                // cresce a ogni ricostruzione della scena
+  shadowDirty: true,     // le ombre vanno ricalcolate al prossimo fotogramma
+  pano: false            // Panorama 3D attivo
 };
 
 export { $, CX, CY, H, HEAD, S, SILL, X, Z, byId, clamp, clone, isRectPts, pointInPoly, polyArea, segDist, st };
