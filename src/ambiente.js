@@ -8,6 +8,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { $, H, X, Z, clamp, polyArea, st } from './core.js';
 import { MAING, camera, hemi, renderer, resize, scene, stage, sun } from './scene.js';
 import { glassMat } from './materials.js';
+import { GLOW } from './furniture.js';
 
 /* Luce e resa: ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione.
    Nord in alto nella piantina: x = est, z = sud. Il sole segue il percorso vero per la latitudine
@@ -266,6 +267,8 @@ function applyAmbLook(){
   /* di giorno le luci di casa sono spente: le tolgo del tutto, così ogni pixel non le calcola a vuoto */
   roomLights.visible = k > 0.001;
   glassMat.emissive.copy(WARM); glassMat.emissiveIntensity = 0.35 * k;
+  /* lampade degli arredi accese con le luci di casa; schermi e strisce LED sempre accesi, più vivi di sera */
+  GLOW.forEach(m => { const gl = m.userData.glow; m.emissiveIntensity = gl.base * (gl.night ? k : .55 + .45 * k); });
   if (bloomPass){ bloomPass.strength = 0.1 + 0.25 * (1 - day); bloomPass.threshold = day > 0.5 ? 1.0 : 0.85; }
   st.shadowDirty = true;
   refreshEnv(hourT >= 1);
