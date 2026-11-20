@@ -126,6 +126,25 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
 .where{ position:absolute; right:12px; top:64px; padding:7px 14px; border-radius:999px; font-size:13px; font-weight:600; background:var(--panel); border:1px solid var(--line); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); pointer-events:none; }
 @media (max-width:520px){ .mm{ width:190px; height:92px; } .where{ top:auto; bottom:164px; } }
 
+/* ---------- versioni di arredo ---------- */
+.vpanel{ position:absolute; top:62px; right:8px; z-index:5; width:min(320px,calc(100% - 16px)); max-height:calc(100% - 80px); overflow:auto; padding:4px 12px 12px; border-radius:16px; }
+.vlist{ display:flex; flex-direction:column; gap:6px; }
+.vrow{ display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:8px 12px; border:1px solid var(--line); border-radius:11px; background:transparent; cursor:pointer; font-size:14px; font-weight:600; text-align:left; }
+.vrow .vn{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vrow .vc{ font-size:12px; font-weight:400; color:var(--muted); }
+.vrow[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+.vrow[aria-pressed="true"] .vc{ color:inherit; opacity:.8; }
+#btnVar .lbl{ max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmpui{ position:absolute; inset:0; pointer-events:none; z-index:1; }
+.cmpui .div{ position:absolute; background:var(--line); }
+.cmpui .tag{ position:absolute; transform:translateX(-50%); max-width:44%; padding:6px 14px; border-radius:999px; font-size:13px; font-weight:700; background:var(--panel); border:1px solid var(--line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cmpui[data-dir="h"] .div{ left:50%; top:0; bottom:0; width:2px; margin-left:-1px; }
+.cmpui[data-dir="h"] .tag{ top:66px; }
+.cmpui[data-dir="h"] .ta{ left:25%; } .cmpui[data-dir="h"] .tb{ left:75%; }
+.cmpui[data-dir="v"] .div{ top:50%; left:0; right:0; height:2px; margin-top:-1px; }
+.cmpui[data-dir="v"] .tag{ left:50%; max-width:80%; }
+.cmpui[data-dir="v"] .ta{ top:66px; } .cmpui[data-dir="v"] .tb{ top:calc(50% + 10px); }
+
 #dlg{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); padding:16px; z-index:8; }
 #dlg .box{ width:min(560px,100%); border-radius:16px; padding:14px; }
 #dlg h2{ margin:0 0 6px; font-size:15px; }
@@ -152,6 +171,8 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
       <svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
     <button type="button" class="ib edit-only" id="redo" aria-label="Ripeti" title="Ripeti" hidden="">
       <svg class="i" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg></button>
+    <button type="button" class="ib" id="btnVar" aria-haspopup="true" aria-expanded="false" title="Versioni di arredo">
+      <svg class="i" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"></path><path d="M4 12l8 4 8-4"></path><path d="M4 16l8 4 8-4"></path></svg><span class="lbl" id="varLbl">Versioni</span></button>
     <button type="button" class="ib" id="btnEdit" aria-pressed="false" title="Modifica la casa">
       <svg class="i" viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"></path><path d="M14 7l3 3"></path></svg><span class="lbl" id="editLbl">Modifica</span></button>
     <button type="button" class="ib" id="btnMenu" aria-haspopup="true" aria-expanded="false" aria-label="Opzioni" title="Opzioni">
@@ -183,6 +204,9 @@ svg.i{ width:22px; height:22px; flex:none; fill:none; stroke:currentColor; strok
     <p class="note edit-only" id="status" hidden=""></p>
     <input type="file" id="file" accept=".json,application/json" hidden="">
   </div>
+
+  <div class="vpanel glass" id="vpanel" hidden=""></div>
+  <div class="cmpui" id="cmpui" data-dir="h" hidden=""><div class="div"></div><p class="tag ta" id="cmpA"></p><p class="tag tb" id="cmpB"></p></div>
 
   <nav class="dock glass edit-only" id="dock" aria-label="Strumenti di modifica" hidden=""></nav>
 
@@ -255,12 +279,17 @@ sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
 scene.add(sun);
 
 const staticG = new THREE.Group();   // base, strada, scale (non modificabili)
-const floorsG = new THREE.Group();   // pavimenti, parapetti
-const wallsG  = new THREE.Group();   // pareti, serramenti, porte, colonne
+let floorsG = new THREE.Group();     // pavimenti, parapetti
+let wallsG  = new THREE.Group();     // pareti, serramenti, porte, colonne
 const labelsG = new THREE.Group();
 const editG   = new THREE.Group();   // evidenziazioni dell’editor
 scene.add(staticG, floorsG, wallsG, labelsG, editG);
-const furnG = new THREE.Group(); scene.add(furnG);
+let furnG = new THREE.Group(); scene.add(furnG);
+/* Seconda copia di pavimenti, pareti e arredi: serve al confronto affiancato fra due versioni */
+const MAING = { f:floorsG, w:wallsG, u:furnG };
+const CMPG  = { f:new THREE.Group(), w:new THREE.Group(), u:new THREE.Group() };
+CMPG.f.visible = CMPG.w.visible = CMPG.u.visible = false;
+scene.add(CMPG.f, CMPG.w, CMPG.u);
 
 /* ------------------------- Materiali ------------------------- */
 const mat = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color:c, roughness:.9, metalness:0 }, o||{}));
@@ -732,7 +761,7 @@ const okTex = t => (typeof t === 'string' && TEXDEF[t]) ? t : undefined;
 const normSide = o => (o && typeof o === 'object') ? { col:okCol(o.col), tx:okTex(o.tx), h:(typeof o.h === 'number' && isFinite(o.h) && o.h > 0) ? clamp(o.h, .1, 4) : undefined, tcol:okCol(o.tcol) } : undefined;
 function normalize(p){
   const num = v => (typeof v === 'number' && isFinite(v));
-  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[] };
+  const out = { v:1, walls:[], columns:[], floors:[], rails:[], labels:[], furniture:[], variants:[], active:'' };
   (p.walls || []).forEach(w => {
     if (![w.x1,w.y1,w.x2,w.y2].every(num)) return;
     let x1 = w.x1, y1 = w.y1, x2 = w.x2, y2 = w.y2;
@@ -759,13 +788,96 @@ function normalize(p){
     if (!num(l.x) || !num(l.y)) return;
     out.labels.push({ id:l.id || uid(), text:String(l.text || ''), x:l.x, y:l.y, w:clamp(num(l.w) ? l.w : 1.2, .3, 8), g:l.g ? 1 : 0 });
   });
-  (p.furniture || []).forEach(f => {
+  out.furniture = normFurn(p.furniture);
+  (Array.isArray(p.variants) ? p.variants : []).forEach(v => {
+    if (!v || typeof v !== 'object') return;
+    const id = (typeof v.id === 'string' && v.id) ? v.id : uid();
+    if (out.variants.some(x => x.id === id)) return;
+    out.variants.push({ id:id, name:String(v.name || '').trim().slice(0,40) || ('Versione ' + (out.variants.length + 1)),
+      furniture:normFurn(v.furniture), fin:normFin(v.fin) });
+  });
+  if (!out.variants.length) out.variants.push({ id:'v1', name:'Versione 1' });
+  out.active = out.variants.some(v => v.id === p.active) ? p.active : out.variants[0].id;
+  /* i dati della versione attiva sono quelli della piantina stessa */
+  const a = out.variants.find(v => v.id === out.active); delete a.furniture; delete a.fin;
+  return out;
+}
+function normFurn(list){
+  const num = v => (typeof v === 'number' && isFinite(v)), out = [];
+  (Array.isArray(list) ? list : []).forEach(f => {
     if (!f || !FURN[f.type] || !num(f.x) || !num(f.y)) return;
     const d = FURN[f.type];
-    out.furniture.push({ id:f.id || uid(), type:f.type, x:f.x, y:f.y, rot:num(f.rot) ? ((f.rot % 360) + 360) % 360 : 0,
+    out.push({ id:f.id || uid(), type:f.type, x:f.x, y:f.y, rot:num(f.rot) ? ((f.rot % 360) + 360) % 360 : 0,
       w:clamp(num(f.w) ? f.w : d.w, .1, 8), d:clamp(num(f.d) ? f.d : d.d, .1, 8), h:clamp(num(f.h) ? f.h : d.h, .01, 4), col:okCol(f.col) });
   });
   return out;
+}
+
+/* ------------------------- Versioni di arredo -------------------------
+   Muri, porte, finestre, forma delle stanze, colonne, parapetti e nomi sono comuni a tutte le versioni.
+   Ogni versione ha i suoi arredi e le sue finiture: materiale dei pavimenti, colori e rivestimenti
+   di muri, colonne e parapetti, colore delle porte.
+   La versione attiva vive direttamente nella piantina (plan.furniture, f.m, w.col…);
+   le altre sono conservate in plan.variants come { id, name, furniture, fin }. */
+const FIN_KEYS = { walls:['col','tx','sa','sb'], columns:['col','tx'], rails:['col','tx','bcol','sa','sb'], floors:['m','col'] };
+const jc = o => o === undefined ? undefined : JSON.parse(JSON.stringify(o));
+function normFin(fin){
+  const out = {};
+  if (!fin || typeof fin !== 'object') return out;
+  Object.keys(FIN_KEYS).forEach(k => {
+    const src = fin[k]; if (!src || typeof src !== 'object') return;
+    const m = out[k] = {};
+    Object.keys(src).forEach(id => {
+      const e = src[id]; if (!e || typeof e !== 'object') return;
+      const o = {};
+      FIN_KEYS[k].forEach(f => {
+        const v = f === 'm' ? ((FLOORS[e.m] || e.m === 'colore') ? e.m : 'parquet')
+                : f === 'tx' ? okTex(e.tx) : (f === 'sa' || f === 'sb') ? normSide(e[f]) : okCol(e[f]);
+        if (v !== undefined) o[f] = v;
+      });
+      if (k === 'walls' && Array.isArray(e.dc)) o.dc = e.dc.map(c => okCol(c) || null);
+      m[id] = o;
+    });
+  });
+  return out;
+}
+function takeFinishes(p){
+  const fin = {};
+  Object.keys(FIN_KEYS).forEach(k => {
+    const m = fin[k] = {};
+    p[k].forEach(o => {
+      const e = {};
+      FIN_KEYS[k].forEach(f => { if (o[f] !== undefined) e[f] = jc(o[f]); });
+      if (k === 'walls' && o.ops.some(op => op.col)) e.dc = o.ops.map(op => op.col || null);
+      m[o.id] = e;
+    });
+  });
+  return fin;
+}
+function putFinishes(p, fin){
+  Object.keys(FIN_KEYS).forEach(k => {
+    const m = (fin && fin[k]) || {};
+    p[k].forEach(o => {
+      const e = m[o.id]; if (!e) return;        /* elemento aggiunto dopo: tiene le finiture attuali */
+      FIN_KEYS[k].forEach(f => { if (f !== 'm') o[f] = jc(e[f]); });
+      if (k === 'floors' && e.m) o.m = e.m;
+      if (k === 'walls') o.ops.forEach((op, i) => { op.col = (e.dc && e.dc[i]) || undefined; });
+    });
+  });
+}
+const activeVar = p => p.variants.find(v => v.id === p.active);
+/* conserva nella lista i dati della versione attiva */
+function storeActive(p){ const a = activeVar(p); a.furniture = jc(p.furniture); a.fin = takeFinishes(p); }
+/* porta nella piantina i dati di un’altra versione (dopo storeActive) */
+function loadVariant(p, id){
+  const v = p.variants.find(x => x.id === id); if (!v) return;
+  p.furniture = jc(v.furniture || []); putFinishes(p, v.fin);
+  delete v.furniture; delete v.fin; p.active = id;
+}
+/* una copia della piantina con la versione indicata attiva (per il confronto) */
+function variantPlan(id){
+  if (id === plan.active) return plan;
+  const c = jc(plan); storeActive(c); loadVariant(c, id); return c;
 }
 
 /* ------------------------- Arredi ------------------------- */
@@ -1099,7 +1211,8 @@ function buildFurn(f){
     collide(f.x - hx, f.x + hx, f.y - hy, f.y + hy);
   }
 }
-document.getElementById('optFurn').addEventListener('change', e => { furnG.visible = e.target.checked; });
+let showFurn = true;
+document.getElementById('optFurn').addEventListener('change', e => { showFurn = e.target.checked; furnG.visible = showFurn; });
 
 function rebuild(){
   clearGroup(floorsG); clearGroup(wallsG); clearGroup(labelsG, true); clearGroup(furnG);
@@ -1110,6 +1223,23 @@ function rebuild(){
   plan.rails.forEach(buildRail);
   plan.labels.forEach(buildLabel);
   plan.furniture.forEach(buildFurn);
+  if (typeof syncVariants === 'function') syncVariants();
+}
+/* Costruisce la seconda versione nei gruppi del confronto, riusando le stesse funzioni */
+let cmpId = null;
+function buildCmp(){
+  clearGroup(CMPG.f); clearGroup(CMPG.w); clearGroup(CMPG.u);
+  if (!cmpId) return;
+  const keep = plan, nCol = colliders.length;
+  try {
+    plan = variantPlan(cmpId);
+    floorsG = CMPG.f; wallsG = CMPG.w; furnG = CMPG.u;
+    plan.floors.forEach(buildFloor); plan.walls.forEach(buildWall); plan.columns.forEach(buildColumn);
+    plan.rails.forEach(buildRail); plan.furniture.forEach(buildFurn);
+  } finally {
+    plan = keep; floorsG = MAING.f; wallsG = MAING.w; furnG = MAING.u;
+    colliders.length = nCol;
+  }
 }
 
 /* Elementi fissi: base, strada, scale */
@@ -1160,7 +1290,11 @@ const hints = {
 };
 const hintEl = $('hint'), padEl = $('walkui');
 
-function aspect(){ return Math.max(.35, canvas.clientWidth / Math.max(1, canvas.clientHeight)); }
+function aspect(){
+  let w = canvas.clientWidth, h = canvas.clientHeight;
+  if (cmpId){ if (cmpVertical()) h /= 2; else w /= 2; }      /* nel confronto ogni vista occupa metà schermo */
+  return Math.max(.35, w / Math.max(1, h));
+}
 function preset(m){
   const a = aspect();
   if (m === 'plan'){
@@ -1174,6 +1308,7 @@ function applyLook(){ camera.rotation.set(pitch, yaw, 0, 'YXZ'); }
 function setHint(){
   let t = hints[mode];
   if (editing) t = tool !== 'select' ? TIPS[tool] : (sel ? '' : hints.edit);
+  if (cmpId) t = '';
   hintEl.textContent = t || ''; hintEl.hidden = !t;
 }
 
@@ -2165,17 +2300,129 @@ $('scollapse').addEventListener('click', () => {
 
 /* ---------- menu opzioni ---------- */
 const menuEl = $('menu'), btnMenu = $('btnMenu');
-function toggleMenu(open){ menuEl.hidden = !open; btnMenu.setAttribute('aria-expanded', String(open)); }
+function toggleMenu(open){ menuEl.hidden = !open; btnMenu.setAttribute('aria-expanded', String(open)); if (open) toggleVar(false); }
 btnMenu.addEventListener('click', () => toggleMenu(menuEl.hidden));
 document.addEventListener('pointerdown', e => {
   if (!menuEl.hidden && !menuEl.contains(e.target) && !btnMenu.contains(e.target)) toggleMenu(false);
 });
 window.addEventListener('keydown', e => { if (e.key === 'Escape' && !menuEl.hidden) toggleMenu(false); });
 
+/* ---------- versioni di arredo ---------- */
+const vpanel = $('vpanel'), btnVar = $('btnVar');
+function toggleVar(open){
+  vpanel.hidden = !open; btnVar.setAttribute('aria-expanded', String(open));
+  if (open){ toggleMenu(false); renderVarPanel(); }
+}
+btnVar.addEventListener('click', () => toggleVar(vpanel.hidden));
+document.addEventListener('pointerdown', e => {
+  if (!vpanel.hidden && !vpanel.contains(e.target) && !btnVar.contains(e.target)) toggleVar(false);
+});
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && !vpanel.hidden) toggleVar(false); });
+
+function switchVariant(id){
+  if (id === plan.active || !plan.variants.some(v => v.id === id)) return;
+  if (cmpId === id) cmpId = plan.active;      /* nel confronto le due metà si scambiano */
+  mutate(() => { storeActive(plan); loadVariant(plan, id); });
+  sel = null; overlayDirty = true; refreshProps();
+  flash('Versione: ' + activeVar(plan).name);
+}
+function newVariant(empty){
+  const cur = activeVar(plan), id = uid();
+  const base = empty ? 'Nuova versione' : cur.name + ' (copia)';
+  let name = base, n = 2;
+  while (plan.variants.some(v => v.name === name)) name = base + ' ' + (n++);
+  mutate(() => {
+    storeActive(plan);
+    plan.variants.splice(plan.variants.indexOf(cur) + 1, 0, { id:id, name:name.slice(0,40) });
+    plan.active = id;
+    if (empty) plan.furniture = [];
+  });
+  sel = null; overlayDirty = true; refreshProps();
+  renderVarPanel(true);
+}
+let delArmed = false;
+function deleteVariant(b){
+  if (plan.variants.length < 2) return;
+  if (!delArmed){
+    delArmed = true; b.textContent = 'Confermi?';
+    setTimeout(() => { if (delArmed){ delArmed = false; renderVarPanel(); } }, 3500); return;
+  }
+  delArmed = false;
+  const cur = activeVar(plan), i = plan.variants.indexOf(cur), next = plan.variants[i ? i - 1 : 1];
+  mutate(() => {
+    plan.variants.splice(i, 1);
+    loadVariant(plan, next.id);
+  });
+  sel = null; overlayDirty = true; refreshProps();
+  flash('Versione eliminata. Puoi ancora annullare.');
+}
+function setCompare(id){
+  cmpId = (id && id !== plan.active && plan.variants.some(v => v.id === id)) ? id : null;
+  if (cmpId && editing) setEditing(false);
+  syncVariants();
+  if (!cmpId) resize();
+  setHint();
+  if (mode !== 'walk'){            /* reinquadro la casa per la nuova forma della vista */
+    const p = preset(mode);
+    tween = { t:0, dur:.7, fp:camera.position.clone(), ft:controls.target.clone(), tp:p.pos, tt:p.tgt };
+  }
+}
+/* Chiamata a ogni ricostruzione: aggiorna etichetta, confronto e pannello */
+function syncVariants(){
+  const a = activeVar(plan);
+  $('varLbl').textContent = a.name;
+  btnVar.title = 'Versione di arredo: ' + a.name;
+  if (cmpId && (cmpId === plan.active || !plan.variants.some(v => v.id === cmpId))) cmpId = null;
+  if (cmpId) buildCmp(); else { clearGroup(CMPG.f); clearGroup(CMPG.w); clearGroup(CMPG.u); }
+  $('cmpui').hidden = !cmpId;
+  if (cmpId){ $('cmpA').textContent = a.name; $('cmpB').textContent = plan.variants.find(v => v.id === cmpId).name; }
+  if (!vpanel.hidden) renderVarPanel();
+}
+function renderVarPanel(focusName){
+  if (vpanel.hidden) return;
+  const ro = viewOnlyFile;
+  vpanel.textContent = '';
+  const add = n => vpanel.appendChild(n);
+  add(section('Versioni di arredo'));
+  const list = el('div','vlist');
+  plan.variants.forEach(v => {
+    const b = el('button','vrow'); b.type = 'button';
+    b.setAttribute('aria-pressed', String(v.id === plan.active));
+    const n = v.id === plan.active ? plan.furniture.length : (v.furniture || []).length;
+    b.append(el('span','vn', v.name), el('span','vc', n === 1 ? '1 arredo' : n + ' arredi'));
+    b.addEventListener('click', () => switchVariant(v.id));
+    list.appendChild(b);
+  });
+  add(list);
+  if (!ro){
+    const nm = txtIn(activeVar(plan).name, v => { if (v) mutate(() => { activeVar(plan).name = v; }); });
+    add(fld('Nome', nm));
+    const acts = el('div','acts');
+    acts.append(btn('Duplica', () => newVariant(false)), btn('Nuova vuota', () => newVariant(true)));
+    if (plan.variants.length > 1){
+      const d = btn(delArmed ? 'Confermi?' : 'Elimina', () => deleteVariant(d), 'danger'); acts.append(d);
+    }
+    add(acts);
+    if (focusName){ nm.focus(); nm.select(); }
+  }
+  if (plan.variants.length > 1){
+    add(section('Confronto affiancato'));
+    const others = plan.variants.filter(v => v.id !== plan.active);
+    let pick = (cmpId && others.some(v => v.id === cmpId)) ? cmpId : others[0].id;
+    add(fld('Accanto a', selIn(others.map(v => [v.id, v.name]), pick, v => { pick = v; if (cmpId) setCompare(v); })));
+    const cb = btn(cmpId ? 'Chiudi il confronto' : 'Confronta affiancate', () => setCompare(cmpId ? null : pick), cmpId ? '' : 'primary');
+    cb.style.width = '100%'; cb.style.marginTop = '6px';
+    add(cb);
+  }
+  add(note('Muri, porte, finestre e forma delle stanze sono uguali in tutte le versioni. Cambiano arredi, pavimenti, colori e rivestimenti.' +
+    (ro ? '' : ' Per modificare la versione attiva usa Modifica.')));
+}
+
 /* ---------- attivazione dell’editor ---------- */
 function setEditing(on){
   if (on === editing) return;
   editing = on;
+  if (on && cmpId) setCompare(null);
   document.querySelectorAll('.edit-only').forEach(e => { e.hidden = !on; });
   $('btnEdit').setAttribute('aria-pressed', String(on));
   $('editLbl').textContent = on ? 'Fine' : 'Modifica';
@@ -2400,8 +2647,32 @@ function frame(){
   const cur = wallsG.scale.y;
   if (Math.abs(cur - lowTarget) > 0.002) wallsG.scale.y = cur + (lowTarget - cur) * Math.min(1, dt*8);
   else wallsG.scale.y = lowTarget;
-  renderer.render(scene, camera);
+  CMPG.w.scale.y = wallsG.scale.y;
+  if (cmpId) renderSplit(); else renderer.render(scene, camera);
   requestAnimationFrame(frame);
+}
+
+/* Confronto: la stessa inquadratura disegnata due volte, una per metà schermo */
+function cmpVertical(){ return stage.clientHeight > stage.clientWidth * 1.1; }
+function renderSplit(){
+  const w = stage.clientWidth, h = stage.clientHeight, v = cmpVertical();
+  const hw = v ? w : Math.floor(w/2), hh = v ? Math.floor(h/2) : h;
+  const halves = [ v ? [0, h - hh] : [0, 0], v ? [0, 0] : [w - hw, 0] ];
+  camera.aspect = hw / Math.max(1, hh); camera.updateProjectionMatrix();
+  renderer.setScissorTest(true);
+  halves.forEach((o, i) => {
+    const a = i === 0;
+    MAING.f.visible = MAING.w.visible = a; MAING.u.visible = a && showFurn;
+    CMPG.f.visible = CMPG.w.visible = !a; CMPG.u.visible = !a && showFurn;
+    renderer.setViewport(o[0], o[1], hw, hh); renderer.setScissor(o[0], o[1], hw, hh);
+    renderer.render(scene, camera);
+  });
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, w, h);
+  MAING.f.visible = MAING.w.visible = true; MAING.u.visible = showFurn;
+  CMPG.f.visible = CMPG.w.visible = CMPG.u.visible = false;
+  camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+  $('cmpui').dataset.dir = v ? 'v' : 'h';
 }
 
 /* Avvio: attendo il font per le etichette (con tempo massimo) */
