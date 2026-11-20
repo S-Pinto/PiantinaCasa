@@ -279,4 +279,4 @@ function contextFrame(on){
   }
 }
 
-export { contextFrame };
+export { contextFrame, roofBase, roofMatFor };

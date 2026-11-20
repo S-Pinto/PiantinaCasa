@@ -10,6 +10,7 @@ import { drawOverlay } from './overlay.js';
 import { initArtifact, initFileUi, initStorage } from './storage.js';
 import { amb, ambFrame, initAmbiente, renderView } from './ambiente.js';
 import { contextFrame } from './contesto.js';
+import { initRoof, roofFrame } from './tetto.js';
 import { measFrame } from './misure.js';
 import { initPano } from './panorama.js';
 
@@ -77,6 +78,7 @@ function frame(time){
   CMPG.w.scale.y = walls.scale.y;
   ambFrame(dt);
   contextFrame(amb.context);
+  roofFrame();
   measFrame();
   vtoolsEl.hidden = st.editing;
   if (st.cmpId) renderSplit(); else renderView();
@@ -120,6 +122,7 @@ function start(){
   histBtns();
   initAmbiente();
   initPano();
+  initRoof();
   frame();
   initStorage();
   initArtifact();

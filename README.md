@@ -46,6 +46,7 @@ tools/              strumenti per chi sviluppa
 | `storage.js` | salvataggi, import/export, file HTML da inviare |
 | `ambiente.js` | ora del giorno (sole, cielo, stelle, luci di casa), qualità grafica, post-produzione |
 | `contesto.js` | il palazzo sotto l’attico, le unità vicine, strade, alberi e palazzine del quartiere |
+| `tetto.js` | il tetto dell’attico (solaio a quadrotti, muretto, vano scala), da mostrare o nascondere |
 | `misure.js` | quote interne delle stanze, superfici, ingombro totale, metro a due punti |
 | `panorama.js` | Panorama 3D: vista cinematografica a tutto schermo, foto in PNG |
 
