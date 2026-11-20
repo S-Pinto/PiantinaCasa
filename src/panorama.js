@@ -76,4 +76,8 @@ function initPano(){
 }
 
 
+
+
+
+
 export { initPano };

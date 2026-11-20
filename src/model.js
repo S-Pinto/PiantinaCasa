@@ -26,8 +26,8 @@ function normalize(p){
     out.walls.push({ id:w.id || uid(), x1:Math.min(x1,x2), y1:Math.min(y1,y2), x2:Math.max(x1,x2), y2:Math.max(y1,y2),
       k:w.k === 'e' ? 'e' : 'i', col:okCol(w.col), tx:okTex(w.tx), sa:normSide(w.sa), sb:normSide(w.sb),
       ops:(w.ops || []).filter(o => num(o.p) && num(o.w)).map(o => ({ p:o.p, w:Math.max(6,o.w), col:okCol(o.col),
-        t:['door','win','pf','open'].indexOf(o.t) >= 0 ? o.t : 'door', s:o.s === -1 ? -1 : 1,
-        n:num(o.n) && o.n >= 1 ? clamp(Math.round(o.n), 1, 24) : undefined })) });
+        t:['door','win','pf','open','lift'].indexOf(o.t) >= 0 ? o.t : 'door', s:o.s === -1 ? -1 : 1,
+        n:num(o.n) && o.n >= 1 ? clamp(Math.round(o.n), 1, 24) : undefined, fc:okCol(o.fc) })) });
   });
   (p.columns || []).forEach(c => {
     if (![c.x0,c.x1,c.y0,c.y1].every(num)) return;
@@ -39,7 +39,7 @@ function normalize(p){
   });
   (p.rails || []).forEach(r => {
     if (!Array.isArray(r.pts) || r.pts.length < 2 || !r.pts.every(q => Array.isArray(q) && num(q[0]) && num(q[1]))) return;
-    out.rails.push({ id:r.id || uid(), kind:(r.kind === 'glazed' || r.kind === 'fence') ? r.kind : 'rail', h:(typeof r.h === 'number' && isFinite(r.h)) ? clamp(r.h, .3, 2) : undefined, col:okCol(r.col), tx:okTex(r.tx), base:(typeof r.base === 'number' && isFinite(r.base)) ? clamp(r.base, 0, 1.2) : undefined, bcol:okCol(r.bcol), pw:num(r.pw) ? clamp(r.pw, .2, 4) : undefined, sa:normSide(r.sa), sb:normSide(r.sb), pts:r.pts.map(q => [q[0],q[1]]) });
+    out.rails.push({ id:r.id || uid(), kind:(r.kind === 'glazed' || r.kind === 'fence') ? r.kind : 'rail', h:(typeof r.h === 'number' && isFinite(r.h)) ? clamp(r.h, .3, 2) : undefined, col:okCol(r.col), tx:okTex(r.tx), base:(typeof r.base === 'number' && isFinite(r.base)) ? clamp(r.base, 0, 1.2) : undefined, bcol:okCol(r.bcol), pw:num(r.pw) ? clamp(r.pw, .2, 4) : undefined, fc:okCol(r.fc), sa:normSide(r.sa), sb:normSide(r.sb), pts:r.pts.map(q => [q[0],q[1]]) });
   });
   (p.labels || []).forEach(l => {
     if (!num(l.x) || !num(l.y)) return;
