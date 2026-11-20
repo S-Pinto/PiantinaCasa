@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { $, X, Z, st } from './core.js';
 import { cssVar } from './dom.js';
-import { MAING, camera, canvas, cmpVertical, labelsG } from './scene.js';
+import { MAING, camera, canvas, cmpVertical } from './scene.js';
 import { plate, road } from './build.js';
 import { EYE, vel } from './walk.js';
 import { LEVEL_TIPS, TIPS, setEditing } from './editor.js';
@@ -84,7 +84,6 @@ function setMode(m){
 }
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
-$('optLabels').addEventListener('change', e => { labelsG.visible = e.target.checked; });
 function updateLow(){ st.lowTarget = ($('optLow').checked || st.editing) ? 0.07 : 1; }
 $('optLow').addEventListener('change', updateLow);
 $('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; MAING.u.visible = st.showFurn; });

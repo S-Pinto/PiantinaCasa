@@ -471,4 +471,4 @@ const wellMat = mat('#e6e2da'), railMat = mat('#4a5058', { roughness:.45, metaln
 plate.userData.keep = road.userData.keep = true;     /* si accendono e spengono col contesto */
 mergeStatic(staticG);
 
-export { buildCmp, clearGroup, colliders, floorElev, holedPlane, holedSlab, labelWpx, plate, rebuild, rebuildFurn, road };
+export { buildCmp, clearGroup, colliders, floorElev, holedPlane, holedSlab, labelWpx, plate, railThick, rebuild, rebuildFurn, road };

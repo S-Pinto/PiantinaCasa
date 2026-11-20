@@ -12,6 +12,7 @@ import { amb, ambFrame, initAmbiente, renderView } from './ambiente.js';
 import { contextFrame } from './contesto.js';
 import { initRoof, roofFrame } from './tetto.js';
 import { measFrame } from './misure.js';
+import { namesFrame } from './nomi.js';
 import { initPano } from './panorama.js';
 import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
 
@@ -82,6 +83,7 @@ function frame(time){
   contextFrame(amb.context);
   roofFrame();
   measFrame();
+  namesFrame();
   vtoolsEl.hidden = st.editing;
   /* Disegno solo se qualcosa è cambiato: a scena ferma la scheda video riposa e l’immagine resta identica */
   const moved = cameraMoved();

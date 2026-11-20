@@ -191,6 +191,20 @@ body[data-editing="1"] .dock{ top:116px; max-height:calc(100% - 184px); }
 .mlist li.out{ color:var(--muted); }
 .mlist .md{ color:var(--muted); font-size:12px; align-self:center; }
 .mlist .ma{ font-weight:700; min-width:62px; text-align:right; }
+.mlist li[role="button"]{ cursor:pointer; border-radius:8px; }
+.mlist li[role="button"]:hover{ background:color-mix(in srgb, var(--accent) 8%, transparent); }
+.mlist li.on{ background:color-mix(in srgb, #7c3aed 14%, transparent); }
+.mcat{ margin:2px 0 6px; }
+.mpick{ margin:6px 0 4px; padding:8px 10px; border-radius:10px; font-size:12.5px; line-height:1.4; background:color-mix(in srgb, #7c3aed 10%, transparent); }
+.mroom{ margin:6px 0 4px; padding:10px; border:1px solid color-mix(in srgb, #7c3aed 45%, var(--line)); border-radius:12px; }
+.mrhead{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; font-size:15px; }
+.btn.sm{ min-height:32px; padding:4px 10px; font-size:12.5px; }
+.mpaint{ margin:0 0 6px; }
+.mwalls li{ grid-template-columns:auto 1fr auto; cursor:default; }
+.mwalls li.note{ display:block; border:0; }
+.mwalls .wl{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:6px; background:#7c3aed; color:#fff; font-weight:700; font-size:12px; }
+.mwalls .mn{ font-size:12.5px; align-self:center; }
+.mallrow{ font-size:13px; }
 body[data-pano="1"] .topbar, body[data-pano="1"] .hint, body[data-pano="1"] .vtools, body[data-pano="1"] .menu,
 body[data-pano="1"] .vpanel, body[data-pano="1"] .apanel, body[data-pano="1"] .mpanel, body[data-pano="1"] .sheet,
 body[data-pano="1"] .dock, body[data-pano="1"] .walkui, body[data-pano="1"] .cmpui{ display:none !important; }
