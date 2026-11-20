@@ -171,20 +171,25 @@ function buildContext(){
   const nx0 = X(58), nx1 = X(132.5), nz = Z(136);
   block(xW, nx0, north, south, GROUND_Y, -0.42, { roof:false, north:true });
   block(nx0, nx1, nz, south, GROUND_Y, -0.42, { roof:false, north:true });
-  /* sotto il balcone della camera la facciata è a filo del parapetto (Google Earth) */
-  const bx0 = X(504), bx1 = X(671), bz = Z(99);
+  /* il balcone della camera sta in una rientranza (Google Earth): sotto di lui la facciata è a filo del parapetto,
+     a est il corpo vicino sporge verso nord, a ovest l’ala sul retro sporge e poi si allarga verso est */
+  const bx0 = X(504), bx1 = X(671), bz = Z(99), pz = north - 1.6;
   block(nx1, bx0, north, south, GROUND_Y, -0.42, { roof:false, north:true, gapN:gap });
   block(bx0, bx1, bz, south, GROUND_Y, -0.42, { roof:false, north:true });
-  block(bx1, xE, north, south, GROUND_Y, -0.42, { roof:false, north:true });
+  block(bx1, xE, pz, south, GROUND_Y, -0.42, { roof:false, north:true });
   block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false, gapS:gap });
   /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
      arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
   /* parte dal lato ovest del vano scala e va verso est: la vetrata della cucina guarda nel vuoto */
-  const wx0 = X(297) - 0.2, wx1 = X(504), wz0 = north - 30;     /* finisce dove comincia il balcone della camera */
+  const wx0 = X(297) - 0.2, wx1 = X(504), wz0 = north - 30;     /* accanto al balcone finisce dove comincia il balcone */
+  const wjx = wx1 + 2.4, wjz = bz - 2.0;                           /* più a nord si allarga verso est */
   block(wx0, wx1, wz0, north, GROUND_Y, -0.04, { south:false, roof:false, gapS:gap });
-  plainBox(wx0, wx1, wz0, wz0 + 0.25, -0.04, 0.9, whiteMat);
+  block(wx1 - 0.01, wjx, wz0, wjz, GROUND_Y, -0.04, { south:false, roof:false });
+  plainBox(wx0, wjx, wz0, wz0 + 0.25, -0.04, 0.9, whiteMat);
   plainBox(wx0, wx0 + 0.25, wz0, north, -0.04, 0.9, whiteMat);
-  plainBox(wx1 - 0.25, wx1, wz0, north, -0.04, 0.9, whiteMat);
+  plainBox(wjx - 0.25, wjx, wz0, wjz, -0.04, 0.9, whiteMat);
+  plainBox(wx1 - 0.25, wjx, wjz - 0.25, wjz, -0.04, 0.9, whiteMat);
+  plainBox(wx1 - 0.25, wx1, wjz, north, -0.04, 0.9, whiteMat);
   roofBox(wx1 - 3.5, north - 24, 5, 4, -0.04);
   /* corpi scala che sporgono sulla facciata dei balconi */
   [xW + 12, -32, 30, xE - 12].forEach(cx => {
@@ -194,20 +199,22 @@ function buildContext(){
   });
   /* copertura attorno all’attico: tetto piano a quadrotti, muretto e volumi tecnici, nessun altro appartamento */
   /* solaio dell’ultimo piano (con il vano scala), bucato dove scende la scala condominiale */
-  ctxG.add(holedSlab([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [X(297), north], [X(297), Z(38)], [X(396), Z(38)], [X(396), north], [bx0, north], [bx0, bz], [bx1, bz], [bx1, north], [xE, north], [xE, south + 0.1], [xW, south + 0.1]],
+  ctxG.add(holedSlab([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [X(297), north], [X(297), Z(38)], [X(396), Z(38)], [X(396), north], [bx0, north], [bx0, bz], [bx1, bz], [bx1, pz], [xE, pz], [xE, south + 0.1], [xW, south + 0.1]],
     -0.44, -0.04, new THREE.MeshStandardMaterial({ color:'#d9d7d2', roughness:.9 })));
   /* quadrotti su tutta la copertura, anche sulla striscia dietro la casa */
   {
     const t = roofBase.clone(); t.needsUpdate = true; t.repeat.set(0.25, 0.25);
-    ctxG.add(holedPlane([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [wx0, north], [wx0, wz0], [wx1, wz0], [wx1, bz], [bx1, bz], [bx1, north], [xE, north], [xE, south], [xW, south]],
+    ctxG.add(holedPlane([[xW, north], [nx0, north], [nx0, nz], [nx1, nz], [nx1, north], [wx0, north], [wx0, wz0], [wjx, wz0], [wjx, wjz], [wx1, wjz], [wx1, bz], [bx1, bz], [bx1, pz], [xE, pz], [xE, south], [xW, south]],
       -0.03, new THREE.MeshStandardMaterial({ map:t, roughness:.95 })));
   }
   /* muretti d’attico sui bordi del tetto (non attraversano l’appartamento né il suo retro) */
   [[xW, west], [east, xE]].forEach(r => plainBox(r[0], r[1], south - 0.25, south, -0.04, 0.9, whiteMat));
-  [[xW, nx0], [bx1, xE]].forEach(r => plainBox(r[0], r[1], north, north + 0.25, -0.04, 0.9, whiteMat));
+  plainBox(xW, nx0, north, north + 0.25, -0.04, 0.9, whiteMat);
+  plainBox(bx1, xE, pz, pz + 0.25, -0.04, 0.9, whiteMat);
+  plainBox(bx1, bx1 + 0.25, pz, bz, -0.04, 0.9, whiteMat);     /* muretto sul lato del corpo che sporge */
   plainBox(nx0 - 0.25, nx0, north, nz, -0.04, 0.9, whiteMat);     /* muretto sul bordo del rientro */
   plainBox(xW, xW + 0.25, north, south, -0.04, 0.9, whiteMat);
-  plainBox(xE - 0.25, xE, north, south, -0.04, 0.9, whiteMat);
+  plainBox(xE - 0.25, xE, pz, south, -0.04, 0.9, whiteMat);
   [[xW + 7, north + 3.2], [xW + 21, mid - 2], [east + 9, north + 3.2], [xE - 10, mid - 2]].forEach(b => roofBox(b[0], b[1], 5, 4.2, -0.04));
 
   /* suolo urbano: asfalto chiaro, cemento e qualche aiuola */
