@@ -12,6 +12,7 @@ import { amb, ambFrame, initAmbiente, renderView } from './ambiente.js';
 import { contextFrame } from './contesto.js';
 import { initRoof, roofFrame } from './tetto.js';
 import { measFrame } from './misure.js';
+import { namesFrame } from './nomi.js';
 import { initPano } from './panorama.js';
 import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
 
@@ -64,6 +65,7 @@ function frame(time){
     const k = ease(Math.min(1, st.tween.t));
     camera.position.lerpVectors(st.tween.fp, st.tween.tp, k);
     controls.target.lerpVectors(st.tween.ft, st.tween.tt, k);
+    if (st.tween.tf && st.tween.ff !== st.tween.tf){ camera.fov = st.tween.ff + (st.tween.tf - st.tween.ff) * k; camera.updateProjectionMatrix(); }
     if (st.tween.t >= 1) st.tween = null;
   }
   if (st.mode === 'walk') walk(dt); else controls.update();
@@ -82,6 +84,7 @@ function frame(time){
   contextFrame(amb.context);
   roofFrame();
   measFrame();
+  namesFrame();
   vtoolsEl.hidden = st.editing;
   /* Disegno solo se qualcosa è cambiato: a scena ferma la scheda video riposa e l’immagine resta identica */
   const moved = cameraMoved();
@@ -153,8 +156,8 @@ function start(){
   resize();
   rebuild();
   setMode('orbit');
-  camera.position.copy(preset('orbit').pos);
-  controls.target.copy(preset('orbit').tgt);
+  const p0 = preset('orbit');
+  camera.position.copy(p0.pos); controls.target.copy(p0.tgt);
   st.tween = null; controls.update();
   histBtns();
   initAmbiente();

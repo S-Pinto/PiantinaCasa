@@ -21,7 +21,7 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape' && !menuEl.hidd
 const vpanel = $('vpanel'), btnVar = $('btnVar');
 function toggleVar(open){
   vpanel.hidden = !open; btnVar.setAttribute('aria-expanded', String(open));
-  if (open){ toggleMenu(false); renderVarPanel(); }
+  if (open){ toggleMenu(false); toggleSysMenu(false); renderVarPanel(); }
 }
 btnVar.addEventListener('click', () => toggleVar(vpanel.hidden));
 document.addEventListener('pointerdown', e => {
@@ -74,7 +74,7 @@ function setCompare(id){
   setHint();
   if (st.mode !== 'walk'){            /* reinquadro la casa per la nuova forma della vista */
     const p = preset(st.mode);
-    st.tween = { t:0, dur:.7, fp:camera.position.clone(), ft:controls.target.clone(), tp:p.pos, tt:p.tgt };
+    st.tween = { t:0, dur:.7, fp:camera.position.clone(), ft:controls.target.clone(), tp:p.pos, tt:p.tgt, ff:camera.fov, tf:p.fov };
   }
 }
 /* Chiamata a ogni ricostruzione: aggiorna etichetta, confronto e pannello */

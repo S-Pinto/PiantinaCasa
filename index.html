@@ -118,6 +118,8 @@
       <svg class="i" viewBox="0 0 24 24"><use href="#i-sun"></use></svg><span class="vl">Giorno</span></button>
     <button type="button" class="vt" id="btnMis" aria-pressed="false" title="Misure della casa">
       <svg class="i" viewBox="0 0 24 24"><path d="M3 15.5L15.5 3 21 8.5 8.5 21z"></path><path d="M7 12l2 2M10 9l1.5 1.5M13 6l2 2M8.5 15.5l0 0"></path></svg><span class="vl">Misure</span></button>
+    <button type="button" class="vt" id="btnNames" aria-pressed="true" title="Nomi delle stanze in 3D">
+      <svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v10H9l-4 4v-4H4z"></path><path d="M8 9h8M8 12h5"></path></svg><span class="vl">Nomi</span></button>
     <button type="button" class="vt" id="btnRoof" aria-pressed="false" title="Mostra o nascondi il tetto">
       <svg class="i" viewBox="0 0 24 24"><path d="M3 11l9-6 9 6"></path><path d="M5 10v9h14v-9"></path><path d="M10 19v-5h4v5"></path></svg><span class="vl">Tetto</span></button>
     <button type="button" class="vt" id="btnPano" aria-pressed="false" title="Panorama 3D">
@@ -169,6 +171,20 @@
         <div><span class="k">Balconi e veranda</span><b id="mout"></b></div>
         <div><span class="k">Altezza soffitti</span><b id="mh"></b></div>
       </div>
+      <p class="note mcat">Superficie catastale: <b id="mcat"></b> (comprende muri e, in quota, balconi).</p>
+      <p class="mpick" id="mpick">Tocca una stanza, nella vista o nell’elenco, per vedere quanto è lungo ogni suo muro.</p>
+      <section class="mroom" id="mroom" hidden="" aria-live="polite">
+        <div class="mrhead"><b id="mrname"></b><button type="button" class="btn sm" id="mback">Tutta la casa</button></div>
+        <div class="mtots">
+          <div><span class="k">Superficie netta</span><b id="mrarea"></b></div>
+          <div><span class="k">Perimetro</span><b id="mrper"></b></div>
+          <div><span class="k">Volume</span><b id="mrvol"></b></div>
+        </div>
+        <p class="note mpaint">Pareti da pitturare, tolte porte e finestre: <b id="mrpaint"></b></p>
+        <ul class="mlist mwalls" id="mwalls"></ul>
+        <p class="note">Lunghezze al netto dei muri, misurate sul filo interno. Le lettere sono anche nella vista; in verde le larghezze di porte e finestre.</p>
+      </section>
+      <label class="mrow mallrow"><span>Lunghezza di tutti i muri, in tutte le stanze</span><input type="checkbox" id="mall"></label>
       <details class="mdet">
         <summary>Stanze una per una (<span id="mcount"></span>)</summary>
         <ul class="mlist" id="mlist"></ul>
