@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { $ } from './core.js';
+import { $, st } from './core.js';
 
 /* Renderer, scena, camera, luci e gruppi di oggetti. */
 
@@ -46,9 +46,19 @@ scene.add(CMPG.f, CMPG.w, CMPG.u);
 function resize(){
   const w = stage.clientWidth, h = stage.clientHeight;
   renderer.setSize(w, h, false);
-  camera.aspect = w / Math.max(1,h); camera.updateProjectionMatrix();
+  camera.aspect = w / Math.max(1,h);
+  if (st.mode === 'walk') camera.fov = walkFov(camera.aspect);
+  camera.updateProjectionMatrix();
+}
+/* Campo visivo della passeggiata. 75° in verticale vanno bene su uno schermo orizzontale; sul telefono
+   in verticale lascerebbero solo 38° in orizzontale, come guardare in un tubo, e le stanze sembrano strette.
+   Lì allargo fino a 100° in verticale (circa 58° in orizzontale). */
+function walkFov(aspect){
+  if (aspect >= 1) return 75;
+  const v = 2 * Math.atan(Math.tan(35 * Math.PI / 180) / aspect) * 180 / Math.PI;
+  return Math.max(75, Math.min(100, v));
 }
 /* nel confronto le due versioni stanno una sopra l’altra se lo schermo è verticale */
 function cmpVertical(){ return stage.clientHeight > stage.clientWidth * 1.1; }
 
-export { CMPG, MAING, camera, canvas, cmpVertical, editG, hemi, labelsG, renderer, resize, scene, stage, staticG, sun };
+export { CMPG, MAING, camera, canvas, cmpVertical, editG, hemi, labelsG, renderer, resize, scene, stage, staticG, sun, walkFov };

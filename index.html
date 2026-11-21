@@ -72,8 +72,21 @@
     <label class="mrow edit-only" hidden=""><span>Aggancio automatico</span><input type="checkbox" id="optSnap" checked=""></label>
     <label class="mrow edit-only" hidden=""><span>Allunga i muri collegati</span><input type="checkbox" id="optLink" checked=""></label>
     <div class="edit-only" hidden="" style="margin-top:12px">
-      <button type="button" class="btn primary" id="saveFile" style="width:100%">Salva nella piantina condivisa</button>
+      <button type="button" class="btn primary" id="saveFile" style="width:100%">Salva per tutti i dispositivi</button>
       <p class="note" id="fileNote" style="margin-top:8px"></p>
+      <div id="ghbox" class="ghbox" hidden="">
+        <p class="note">Per salvare sul sito serve una chiave di GitHub, da creare una volta sola per ogni dispositivo:</p>
+        <ol class="note">
+          <li>apri <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub › Nuova chiave</a>;</li>
+          <li>in <b>Repository access</b> scegli <b>Only select repositories</b> › <b>PiantinaCasa</b>;</li>
+          <li>in <b>Permissions</b> › <b>Contents</b> scegli <b>Read and write</b>, poi <b>Generate token</b>;</li>
+          <li>copia la chiave e incollala qui.</li>
+        </ol>
+        <input type="password" id="ghToken" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+        <div class="ghacts"><button type="button" class="btn primary" id="ghLink">Collega e salva</button><button type="button" class="btn" id="ghCancel">Annulla</button></div>
+        <p class="note">La chiave resta solo su questo dispositivo e serve solo a scrivere la piantina nel tuo progetto.</p>
+      </div>
+      <button type="button" class="linkbtn note" id="ghForget" hidden="">Scollega GitHub da questo dispositivo</button>
     </div>
     <div class="mgrid edit-only" hidden="">
       <button type="button" class="btn" id="save">Salva ora</button>
@@ -175,8 +188,8 @@
     </div>
     <p class="note">Alta aggiunge ombre morbide fra gli oggetti e il bagliore delle luci. Sul telefono parte da Media.</p>
     <label class="arow"><span>Orientamento del nord</span><output id="ambNorthV">0°</output></label>
-    <input type="range" class="arange" id="ambNorth" min="-180" max="180" step="5" aria-label="Orientamento del nord">
-    <p class="note">Impostato a +25° come la freccia del nord della planimetria catastale: il balcone su Via Verona guarda a sud-sud-ovest. Con 0° il nord sarebbe in alto nella piantina.</p>
+    <input type="range" class="arange" id="ambNorth" min="-180" max="180" step="1" aria-label="Orientamento del nord">
+    <p class="note">Impostato a +32°, misurato su Google Earth: il balcone su Via Mantova guarda a sud-sud-est. Con 0° il nord sarebbe in alto nella piantina.</p>
   </div>
 
   <button type="button" class="bussola glass" id="bussola" title="Bussola: tocca per inquadrare tutta la casa" aria-label="Bussola: inquadra tutta la casa">
@@ -202,7 +215,7 @@
   <div class="home" id="home" hidden="" role="dialog" aria-modal="true" aria-labelledby="htitle">
     <div class="hbox glass">
       <div class="shead">
-        <div class="pt"><span id="htitle">Casa di Via Verona</span><small>Attico al 7° piano · Brindisi · balconi a sud-sud-ovest</small></div>
+        <div class="pt"><span id="htitle">Casa di Via Verona</span><small>Attico al 7° piano · Brindisi · balconi a sud-sud-est su Via Mantova</small></div>
         <button type="button" class="ib sm" id="hclose" aria-label="Chiudi" title="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
       </div>
       <div class="mtots hstats" id="hstats"></div>

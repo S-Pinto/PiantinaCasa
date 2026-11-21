@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { $, H, S, X, Z, st } from './core.js';
-import { MAING, scene } from './scene.js';
+import { MAING, hemi, scene } from './scene.js';
 import { wallT } from './model.js';
 import { mergeStatic } from './prestazioni.js';
 import { roofBase, roofMatFor } from './contesto.js';
@@ -18,6 +18,10 @@ const SLAB = 0.3, PARAPET = 0.75;
 let roofOn = false, roofRev = -1, roofVis = null;
 try { roofOn = localStorage.getItem(ROOF_KEY) === '1'; } catch(_){}
 
+/* Sotto il soffitto il sole non arriva più: nella realtà la luce entra dalle finestre e rimbalza su muri e
+   soffitti chiari. Qui la imito con una luce diffusa che segue quella del cielo e c'è solo quando il tetto è visibile. */
+const bounce = new THREE.AmbientLight('#fff2e2', 0);
+roofG.add(bounce);
 const ceilMat = new THREE.MeshStandardMaterial({ color:'#f4f2ee', roughness:.95 });
 const tileMat = (() => { const t = roofBase.clone(); t.needsUpdate = true; t.repeat.set(0.25, 0.25); return new THREE.MeshStandardMaterial({ map:t, roughness:.95 }); })();
 
@@ -29,7 +33,7 @@ function roofBoxAt(x0, x1, z0, z1, y0, y1, m){
 }
 function buildRoof(){
   roofRev = st.rev;
-  roofG.children.slice().forEach(o => { roofG.remove(o); if (o.geometry) o.geometry.dispose(); });
+  roofG.children.slice().forEach(o => { if (o === bounce) return; roofG.remove(o); if (o.geometry) o.geometry.dispose(); });
   /* solaio sopra ogni ambiente chiuso (non sui balconi) */
   st.plan.floors.filter(f => !/balcon|terrazz/i.test(f.name) && f.m !== 'ascensore').forEach(f => {
     const sh = new THREE.Shape();
@@ -69,8 +73,10 @@ function initRoof(){
 }
 function roofFrame(){
   if (!st.plan) return;
-  const vis = roofOn && !st.editing && MAING.w.scale.y > 0.98;
+  /* in passeggiata il soffitto c'è sempre: senza, sopra le pareti si vede il cielo e le stanze sembrano scatole piccole */
+  const vis = (roofOn || st.mode === 'walk') && !st.editing && MAING.w.scale.y > 0.98;
   if (vis && roofRev !== st.rev) buildRoof();
+  if (vis) bounce.intensity = hemi.intensity * 1.1;
   if (vis !== roofVis){ roofVis = vis; roofG.visible = vis; st.shadowDirty = true; }
 }
 

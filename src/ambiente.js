@@ -24,9 +24,10 @@ const QUALITY = {
   bassa: { pr:1,   map:1024, post:false, pointShadows:0 }
 };
 const AMB_KEY = 'piantina-ambiente';
-/* Dalla freccia della planimetria catastale: il nord è circa 25° a destra dell’alto della piantina,
-   quindi il balcone su Via Verona guarda a sud-sud-ovest. */
-const NORTH_PLAN = 25;
+/* Google Earth: la facciata dei balconi corre a 58° dal nord (misura di Mone), quindi il nord è circa 32°
+   a destra dell’alto della piantina e il balcone su Via Mantova guarda a sud-sud-est (148°).
+   Prima era 25°, dalla freccia della planimetria catastale. */
+const NORTH_PLAN = 32;
 const ambState = { night:0 };      // letto da contesto.js per accendere le finestre del quartiere
 const coarsePointer = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
 
@@ -38,8 +39,8 @@ const amb = {
   context: true
 };
 try { Object.assign(amb, JSON.parse(localStorage.getItem(AMB_KEY) || '{}')); } catch(_){}
-/* prima versione salvata: il nord era ancora in alto, lo porto a quello della planimetria catastale */
-if (amb.v !== 2){ amb.north = NORTH_PLAN; amb.v = 2; }
+/* salvataggi di prima: il nord era in alto (v1) o a 25° (v2); se non l’avevi cambiato a mano lo porto a quello misurato */
+if (amb.v !== 3){ if (amb.v !== 2 || amb.north === 25) amb.north = NORTH_PLAN; amb.v = 3; }
 if (!QUALITY[amb.quality]) amb.quality = 'alta';
 if (!SEASONS[amb.season]) amb.season = 'mezza';
 function saveAmb(){ try { localStorage.setItem(AMB_KEY, JSON.stringify(amb)); } catch(_){} }

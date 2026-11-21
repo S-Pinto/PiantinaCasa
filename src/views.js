@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { $, H, X, Z, st } from './core.js';
 import { cssVar } from './dom.js';
-import { MAING, camera, canvas, cmpVertical } from './scene.js';
+import { MAING, camera, canvas, cmpVertical, walkFov } from './scene.js';
 import { plate, road } from './build.js';
 import { EYE, vel } from './walk.js';
 import { LEVEL_TIPS, TIPS, setEditing } from './editor.js';
@@ -33,8 +33,8 @@ controls.minDistance = 3; controls.maxDistance = 110;
 const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
 const hints = {
   orbit:'Trascina per ruotare, rotella o pizzico per zoomare.',
-  plan:'Vista dall’alto, con Via Verona in basso. Rotella o pizzico per zoomare.',
-  planTall:'Vista dall’alto, girata per lo schermo in verticale: Via Verona è a destra. Pizzico per zoomare.',
+  plan:'Vista dall’alto, con Via Mantova in basso. Rotella o pizzico per zoomare.',
+  planTall:'Vista dall’alto, girata per lo schermo in verticale: Via Mantova è a destra. Pizzico per zoomare.',
   walk: coarse ? 'Joystick per muoverti, trascina per guardare. Tocca la mappa per spostarti.'
                : 'Clicca la scena per guardare col mouse (Esc per liberarlo), muoviti con W A S D, Maiusc per correre. Clicca la mappa per spostarti.',
   edit: coarse ? 'Tocca un elemento per modificarlo, oppure scegli uno strumento. Due dita per spostare e zoomare.'
@@ -112,7 +112,7 @@ function fitShot(dir, fov, top){
   return { pos:fitCam.position.clone().add(shift), tgt, fov, dist:D };
 }
 /* Pianta su uno schermo in verticale (telefono): la casa è lunga e stretta, quindi la giro di 90°
-   con Via Verona a destra; così occupa quasi il doppio dello schermo. */
+   con Via Mantova a destra; così occupa quasi il doppio dello schermo. */
 const planTall = () => aspect() < .8;
 function preset(m){
   if (m === 'plan') return fitShot(planTall() ? new THREE.Vector3(-0.0004, 1, 0).normalize() : new THREE.Vector3(0, 1, 0.0004).normalize(), PLAN_FOV, true);
@@ -152,7 +152,7 @@ function setMode(m){
   padEl.dataset.on = m === 'walk' ? '1' : '0';
   if (m === 'walk'){
     controls.enabled = false; st.tween = null;
-    camera.fov = 75; camera.updateProjectionMatrix();
+    camera.fov = walkFov(camera.aspect); camera.updateProjectionMatrix();
     /* in fondo al corridoio, guardando verso il soggiorno: si vede subito la casa in profondità */
     camera.position.set(X(388), EYE, Z(229)); vel.x = vel.z = 0;
     st.yaw = Math.PI / 2; st.pitch = -0.05; applyLook();

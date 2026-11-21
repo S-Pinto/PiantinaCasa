@@ -91,7 +91,7 @@
     {"id":"i72prw","text":"Bagno","x":567.5,"y":172.5,"w":1.1,"g":0},
     {"id":"i73y7t","text":"Balcone","x":575,"y":120,"w":1.6,"g":0},
     {"id":"i74171","text":"Balcone","x":330,"y":322,"w":2.4,"g":0},
-    {"id":"i75zka","text":"Via Verona","x":366,"y":412,"w":3.4,"g":1}
+    {"id":"i75zka","text":"Via Mantova","x":366,"y":412,"w":3.4,"g":1}
   ],
   "furniture": [
     {"id":"r01tvpa","type":"tvparete","x":71,"y":200,"rot":270,"w":2.0,"d":0.4,"h":0.42},

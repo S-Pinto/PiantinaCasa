@@ -23,17 +23,24 @@ function statusMsg(t){
 }
 function updateFileNote(){
   const same = JSON.stringify(st.plan) === st.publishedJson;
-  $('fileNote').textContent = st.artifactApi === false
-    ? 'In questa vista non puoi salvare nel file condiviso.'
-    : same ? 'La piantina condivisa è aggiornata: chi apre il link vede questa versione.'
-           : 'Ci sono modifiche non ancora nel file condiviso. Premi il pulsante per farle vedere a chi apre il link.';
+  const gh = !st.artifactApi && ghAvailable();
+  $('fileNote').textContent = st.artifactApi === false && !gh
+    ? 'Le modifiche si salvano da sole su questo dispositivo. Da qui non si può aggiornare la piantina del sito: usa Esporta per portarle altrove.'
+    : same ? 'La piantina del sito è aggiornata: telefono, computer e chi apre il link vedono questa versione.'
+           : gh ? 'Le modifiche sono salvate solo su questo dispositivo. Premi il pulsante per metterle sul sito e ritrovarle anche sugli altri.'
+                : 'Ci sono modifiche non ancora nel file condiviso. Premi il pulsante per farle vedere a chi apre il link.';
+  $('saveFile').disabled = st.artifactApi === false && !gh;
+  $('ghForget').hidden = !(gh && ghToken());
 }
 function scheduleSave(){
   updateFileNote();
   userEdited = true; dirty = true; statusMsg('Modifiche non ancora salvate…');
   clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400);
 }
-function saveRecord(ts){ return { ts:ts, json:JSON.stringify(st.plan), base:st.publishedJson, key:st.planKey }; }
+/* prev: la piantina che il sito mostrava prima di un salvataggio su GitHub. Finché il sito non si aggiorna
+   (un minuto circa) continua a mostrare quella: non va presa per una novità da unire, o annullerebbe le modifiche. */
+let prevPublished = null;
+function saveRecord(ts){ return { ts:ts, json:JSON.stringify(st.plan), base:st.publishedJson, key:st.planKey, prev:prevPublished || undefined }; }
 function saveLocal(rec){
   try { localStorage.setItem(storageKey(), JSON.stringify(rec)); return true; }
   catch(e){
@@ -72,7 +79,10 @@ function applySaved(o){
     if (!mine.walls.length) return false;
     const pub = JSON.parse(st.publishedJson);
     let n = mine, merged = false;
-    if (o.base !== st.publishedJson){
+    if (o.prev && o.prev === st.publishedJson && o.base){
+      /* salvato sul sito, ma il sito mostra ancora la versione di prima: tengo la mia e ricordo da dove viene */
+      st.publishedJson = o.base; prevPublished = o.prev;
+    } else if (o.base !== st.publishedJson){
       const base = o.base ? normalize(JSON.parse(o.base)) : null;
       n = mergePlans(base, mine, pub); merged = true;
     }
@@ -163,7 +173,11 @@ async function bundleModules(entry){
   return '\n' + external.join('\n') + '\n\n' + parts.join('\n');
 }
 async function saveToFile(){
-  if (!st.artifactApi){ statusMsg('In questa vista non puoi salvare nel file condiviso.'); return; }
+  if (!st.artifactApi){
+    if (!ghAvailable()){ statusMsg('Da qui non si può aggiornare la piantina del sito: usa Esporta per conservarla.'); return; }
+    if (!ghToken()){ showGhBox(true); return; }
+    return saveToGitHub();
+  }
   const b = $('saveFile'); b.disabled = true;
   statusMsg('Salvataggio nel file condiviso…');
   try {
@@ -181,6 +195,94 @@ async function saveToFile(){
   }
 }
 $('saveFile').addEventListener('click', saveToFile);
+
+/* ---------- salvataggio sul sito (GitHub) ----------
+   Il sito pubblicato su GitHub Pages legge data/plan.json dal progetto su GitHub. Con una chiave personale
+   (creata da chi possiede il progetto, solo per questo progetto, permesso Contents: Read and write) la pagina
+   scrive lì la piantina: dopo un minuto circa il sito si aggiorna e telefono e computer vedono le stesse modifiche.
+   Se nel frattempo la piantina sul sito è cambiata, unisco le due versioni (mergePlans) prima di scrivere. */
+const GH_KEY = 'piantina-github';
+const GH_REPO = (() => {
+  const h = location.hostname, seg = location.pathname.split('/').filter(Boolean)[0];
+  if (/\.github\.io$/.test(h) && seg) return { owner:h.split('.')[0], repo:seg };
+  return { owner:'S-Pinto', repo:'PiantinaCasa' };
+})();
+const GH_PATH = 'data/plan.json', GH_BRANCH = 'main';
+/* nel file HTML scaricato la piantina è dentro il file: lì GitHub non c'entra */
+function ghAvailable(){ return !document.getElementById('plan-data') && /^https?:$/.test(location.protocol); }
+function ghToken(){ try { return localStorage.getItem(GH_KEY) || ''; } catch(e){ return ''; } }
+function showGhBox(on){
+  $('ghbox').hidden = !on;
+  if (on){ $('ghToken').value = ''; $('ghToken').focus(); statusMsg('Serve la chiave di GitHub, una volta sola su questo dispositivo.'); }
+}
+function b64encode(text){
+  const bytes = new TextEncoder().encode(text); let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function b64decode(b64){
+  const bin = atob(b64.replace(/\s/g, '')), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+async function ghFetch(method, body){
+  const url = 'https://api.github.com/repos/' + GH_REPO.owner + '/' + GH_REPO.repo + '/contents/' + GH_PATH + (method === 'GET' ? '?ref=' + GH_BRANCH + '&t=' + Date.now() : '');
+  const r = await fetch(url, { method, cache:'no-store', headers:{ 'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + ghToken(), 'X-GitHub-Api-Version':'2022-11-28' },
+    body:body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok){ const e = new Error(data.message || ('HTTP ' + r.status)); e.status = r.status; throw e; }
+  return data;
+}
+let ghBusy = false;
+async function saveToGitHub(){
+  if (ghBusy) return;
+  ghBusy = true; const b = $('saveFile'); b.disabled = true;
+  statusMsg('Salvataggio sul sito…');
+  try {
+    for (let attempt = 0; attempt < 2; attempt++){
+      const cur = await ghFetch('GET');
+      const remoteText = b64decode(cur.content || '');
+      const remote = normalize(JSON.parse(remoteText));
+      const remoteJson = JSON.stringify(remote);
+      let mine = st.plan, merged = false;
+      /* qualcuno (un altro dispositivo, o un aggiornamento del sito) ha cambiato la piantina da quando l'hai aperta */
+      if (remoteJson !== st.publishedJson && remoteJson !== JSON.stringify(st.plan)){
+        mine = mergePlans(normalize(JSON.parse(st.publishedJson)), st.plan, remote); merged = true;
+      }
+      const text = planToJson(mine);
+      if (JSON.stringify(normalize(JSON.parse(text))) === remoteJson){ finishGh(mine, remoteJson, merged, false); return; }
+      try {
+        await ghFetch('PUT', { message:'Piantina: modifiche salvate dall\u2019app', content:b64encode(text), sha:cur.sha, branch:GH_BRANCH });
+      } catch(e){ if (e.status === 409 && attempt === 0) continue; throw e; }   /* scritta da un altro proprio ora: riprovo */
+      finishGh(mine, JSON.stringify(normalize(JSON.parse(text))), merged, true);
+      return;
+    }
+  } catch(e){
+    const s = e && e.status;
+    if (s === 401){ try { localStorage.removeItem(GH_KEY); } catch(_){} showGhBox(true);
+      statusMsg('GitHub non accetta la chiave (scaduta o sbagliata). Creane una nuova e incollala qui.'); }
+    else if (s === 403 || s === 404) statusMsg('La chiave non ha il permesso di scrivere in ' + GH_REPO.repo + ': in GitHub dalle «Contents: Read and write» su questo progetto.');
+    else statusMsg('Salvataggio sul sito non riuscito (' + (navigator.onLine === false ? 'manca la connessione' : (e && e.message) || 'errore') + '). Le modifiche restano su questo dispositivo: riprova fra poco.');
+  } finally { ghBusy = false; updateFileNote(); }
+}
+function finishGh(plan, newPublished, merged, wrote){
+  if (plan !== st.plan){ st.plan = plan; rebuild(); validateSel(); st.overlayDirty = true; refreshProps(); }
+  if (st.publishedJson !== newPublished) prevPublished = st.publishedJson;
+  st.publishedJson = newPublished;
+  saveLocal(saveRecord(Date.now())); dirty = false;
+  const t = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+  statusMsg(!wrote ? 'Il sito aveva già questa piantina.'
+    : (merged ? 'Unite le modifiche arrivate da un altro dispositivo e salvato' : 'Salvato') + ' sul sito alle ' + t + '. Fra un minuto circa la trovi uguale su telefono e computer.');
+  updateFileNote();
+}
+$('ghLink').addEventListener('click', () => {
+  const v = $('ghToken').value.trim();
+  if (!/^(github_pat_|ghp_|gho_)[A-Za-z0-9_]{20,}$/.test(v)){ statusMsg('Questa non sembra una chiave di GitHub: inizia con github_pat_.'); return; }
+  try { localStorage.setItem(GH_KEY, v); } catch(e){ statusMsg('Non riesco a ricordare la chiave su questo dispositivo.'); return; }
+  showGhBox(false); saveToGitHub();
+});
+$('ghCancel').addEventListener('click', () => showGhBox(false));
+$('ghForget').addEventListener('click', () => { try { localStorage.removeItem(GH_KEY); } catch(e){} statusMsg('GitHub scollegato da questo dispositivo.'); updateFileNote(); });
 
 /* ---------- scarica un file HTML da inviare ---------- */
 async function downloadHtml(){
@@ -207,7 +309,6 @@ async function initArtifact(){
     if (!window.claude || !window.claude.use){ st.artifactApi = false; }
     else { const a = await window.claude.use('artifact'); st.artifactApi = a || false; }
   } catch(e){ st.artifactApi = false; }
-  if (st.artifactApi === false) $('saveFile').disabled = true;
   updateFileNote();
 }
 
