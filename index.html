@@ -129,6 +129,8 @@
   </svg>
 
   <div class="vtools glass" id="vtools" role="toolbar" aria-label="Luce, misure e panorama">
+    <button type="button" class="vt" id="btnHome" aria-pressed="false" title="Casa: stanze e impianti">
+      <svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span class="vl">Casa</span></button>
     <button type="button" class="vt" id="btnAmb" aria-haspopup="true" aria-expanded="false" title="Luce: giorno, tramonto, notte">
       <svg class="i" viewBox="0 0 24 24"><use href="#i-sun"></use></svg><span class="vl">Giorno</span></button>
     <button type="button" class="vt" id="btnMis" aria-pressed="false" title="Misure della casa">
@@ -156,6 +158,9 @@
       <button type="button" data-season="mezza">Primavera</button>
       <button type="button" data-season="estate">Estate</button>
     </div>
+    <button type="button" class="btn sunbtn" id="sunbtn" aria-pressed="false">Mappa del sole</button>
+    <div class="sunleg" id="sunleg" hidden=""><span>ombra</span><i></i><span>8+ ore</span></div>
+    <div id="sunres" hidden="" aria-live="polite"></div>
     <p class="sl">Luci di casa</p>
     <div class="segs" id="ambLights" role="group" aria-label="Luci di casa">
       <button type="button" data-lights="auto">Automatiche</button>
@@ -172,6 +177,41 @@
     <label class="arow"><span>Orientamento del nord</span><output id="ambNorthV">0°</output></label>
     <input type="range" class="arange" id="ambNorth" min="-180" max="180" step="5" aria-label="Orientamento del nord">
     <p class="note">Impostato a +25° come la freccia del nord della planimetria catastale: il balcone su Via Verona guarda a sud-sud-ovest. Con 0° il nord sarebbe in alto nella piantina.</p>
+  </div>
+
+  <button type="button" class="bussola glass" id="bussola" title="Bussola: tocca per inquadrare tutta la casa" aria-label="Bussola: inquadra tutta la casa">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><g id="bago"><path d="M24 6l6 18h-12z" fill="#c0392b"></path><path d="M24 42l-6-18h12z" fill="currentColor" opacity=".45"></path><text x="24" y="5.5" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" dominant-baseline="hanging" transform="translate(0 -5)">N</text></g><circle cx="24" cy="24" r="2.4" fill="currentColor"></circle></svg>
+  </button>
+
+  <aside class="mpanel rcard glass" id="rcard" hidden="" aria-label="Scheda della stanza" aria-live="polite">
+    <div class="shead">
+      <p class="pt" id="rcname"></p>
+      <button type="button" class="ib sm" id="rcclose" aria-label="Chiudi la scheda" title="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div class="mtots" id="rctots"></div>
+    <p class="sl">Arredi <span id="rcfn"></span></p>
+    <ul class="rcfurn" id="rcfurn"></ul>
+    <p class="sl">Impianti <span id="rcsn"></span></p>
+    <ul class="mlist" id="rcsys"></ul>
+    <div class="acts">
+      <button type="button" class="btn" id="rcmis">Misure dei muri</button>
+      <button type="button" class="btn primary" id="rcwalk">Entra qui</button>
+    </div>
+  </aside>
+
+  <div class="home" id="home" hidden="" role="dialog" aria-modal="true" aria-labelledby="htitle">
+    <div class="hbox glass">
+      <div class="shead">
+        <div class="pt"><span id="htitle">Casa di Via Verona</span><small>Attico al 7° piano · Brindisi · balconi a sud-sud-ovest</small></div>
+        <button type="button" class="ib sm" id="hclose" aria-label="Chiudi" title="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div class="mtots hstats" id="hstats"></div>
+      <p class="sl">Stanze</p>
+      <div class="hrooms" id="hrooms"></div>
+      <p class="sl">Impianti e domotica</p>
+      <div class="htiles" id="htiles"></div>
+      <p class="note">Per ora qui conti quello che disegni in Modifica › Impianti. Quando la casa avrà la domotica, da questa pagina accenderai le luci, guarderai le telecamere e vedrai i consumi.</p>
+    </div>
   </div>
 
   <aside class="mpanel glass" id="mpanel" data-collapsed="0" hidden="" aria-label="Misure">

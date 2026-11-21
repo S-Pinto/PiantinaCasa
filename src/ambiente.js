@@ -343,4 +343,4 @@ function initAmbiente(){
   syncAmbUi();
 }
 
-export { amb, ambFrame, ambState, initAmbiente, renderView };
+export { SEASONS, amb, ambFrame, ambState, initAmbiente, renderView, sunAt, sunVec, sunsetHour };

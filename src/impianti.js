@@ -475,4 +475,4 @@ function rebuildSys(){
   st.plan.runs.forEach(buildRun);
 }
 
-export { RUNK, SYS, buildRunCatalog, buildSysCatalog, fmtM, hoverSys, initImpianti, layerOn, placeSys, rebuildSys, runKind, runLen, setCatLayer, setLayer, sysHit, sysOverlay, sysProps, sysType, toggleSysMenu, updSysSprites, wallSnap };
+export { LAYERS, RUNK, SYS, buildRunCatalog, buildSysCatalog, fmtM, hoverSys, initImpianti, layerOn, placeSys, rebuildSys, runKind, runLen, setCatLayer, setLayer, sysHit, sysOverlay, sysProps, sysType, toggleSysMenu, updSysSprites, wallSnap };

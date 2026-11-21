@@ -38,7 +38,7 @@ for (const f in mods){
   }
   m.imp = imp;
 }
-const ORDER = ['core.js','dom.js','scene.js','textures.js','materials.js','furniture.js','model.js','build.js','views.js','walk.js','editor.js','overlay.js','props.js','variants.js','storage.js','prestazioni.js','ambiente.js','verde.js','contesto.js','tetto.js','misure.js','nomi.js','panorama.js','main.js','impianti.js'];
+const ORDER = ['core.js','dom.js','scene.js','textures.js','materials.js','furniture.js','model.js','build.js','views.js','walk.js','editor.js','overlay.js','props.js','variants.js','storage.js','prestazioni.js','ambiente.js','verde.js','contesto.js','tetto.js','misure.js','nomi.js','sole.js','casa.js','panorama.js','main.js','impianti.js'];
 const rank = f => { const i = ORDER.indexOf(f); return i < 0 ? 99 : i; };
 for (const f in mods){
   const m = mods[f], head = [];

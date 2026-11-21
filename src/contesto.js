@@ -217,20 +217,20 @@ function roofClutter(x0, x1, z0, z1, y, seed){
 /* Ringhiera di metallo: un piano con le sbarre disegnate (le parti vuote si scartano con alphaTest).
    Le coordinate della texture seguono i metri, così tutte le ringhiere usano un solo materiale e si uniscono. */
 const bandMat = new THREE.MeshStandardMaterial({ color:'#8f8d90', roughness:.85 });
-let railMat = null;
+let railingMat = null;
 function railing(xa, za, xb, zb, y, h){
-  if (!railMat){
+  if (!railingMat){
     const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
     const g = cv.getContext('2d'); g.fillStyle = '#b9bbbe';
     g.fillRect(0, 0, 128, 10); g.fillRect(0, 112, 128, 8);                       /* corrimano e traverso basso */
     for (let x = 4; x < 128; x += 16) g.fillRect(x, 0, 4, 120);                   /* una sbarra ogni 12 cm */
     const t = new THREE.CanvasTexture(cv); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-    railMat = new THREE.MeshStandardMaterial({ map:t, alphaTest:.5, side:THREE.DoubleSide, roughness:.5, metalness:.4 });
+    railingMat = new THREE.MeshStandardMaterial({ map:t, alphaTest:.5, side:THREE.DoubleSide, roughness:.5, metalness:.4 });
   }
   const L = Math.hypot(xb - xa, zb - za); if (L < 0.05) return;
   const geo = new THREE.PlaneGeometry(L, h), uv = geo.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L / 1.0);           /* 1 m di ringhiera = una ripetizione */
-  const m = new THREE.Mesh(geo, railMat);
+  const m = new THREE.Mesh(geo, railingMat);
   m.position.set((xa + xb) / 2, y + h / 2, (za + zb) / 2); m.rotation.y = -Math.atan2(zb - za, xb - xa);
   ctxG.add(m); return m;
 }
@@ -619,4 +619,4 @@ function contextFrame(on){
   }
 }
 
-export { contextFrame, roofBase, roofMatFor };
+export { contextFrame, ctxG, roofBase, roofMatFor };

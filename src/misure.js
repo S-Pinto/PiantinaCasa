@@ -383,4 +383,4 @@ function measFrame(){
   if (measOn && measRev !== st.rev) buildMeasures();
 }
 
-export { SKIP, boundSegs, measFrame, misFmtA, roomWalls };
+export { OUTDOOR, SKIP, boundSegs, frameRoom, measFrame, misFmtA, roomInfo, roomWalls, selectRoom, setMeasures };

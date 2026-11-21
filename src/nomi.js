@@ -139,4 +139,4 @@ function namesFrame(){
   labelsG.children.forEach(m => { if (!m.userData.street){ m.visible = flat; m.material.depthTest = !st.editing; m.renderOrder = st.editing ? 7 : 2; } });
 }
 
-export { namesFrame };
+export { namesFrame, roomTags };
