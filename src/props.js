@@ -324,4 +324,4 @@ function toggleSheet(){ setSheetCollapsed(sheetEl.dataset.collapsed !== '1'); re
 $('scollapse').addEventListener('click', toggleSheet);
 $('stitle').addEventListener('click', () => { if (narrowUI()) toggleSheet(); });
 
-export { narrowUI, propsEl, refreshProps, setSheetCollapsed, sheetEl };
+export { narrowUI, propsEl, refreshProps, setSheetCollapsed };
