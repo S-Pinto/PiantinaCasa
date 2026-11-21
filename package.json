@@ -4,10 +4,13 @@
   "description": "Piantina 3D dell'appartamento di Via Verona",
   "scripts": {
     "start": "python3 -m http.server 8000",
-    "imports": "node tools/sync-imports.js src"
+    "imports": "node tools/sync-imports.js src",
+    "prova": "node tools/prova.mjs"
   },
   "devDependencies": {
     "acorn": "^8.19.0",
-    "eslint-scope": "^9.1.2"
+    "eslint-scope": "^9.1.2",
+    "playwright": "^1.50.0",
+    "three": "0.187.0"
   }
 }

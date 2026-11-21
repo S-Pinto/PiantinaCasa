@@ -26,6 +26,18 @@ Dal sito pubblicato la piantina si installa come un’app, con la sua icona:
 
 Dopo la prima apertura con internet funziona anche offline: `sw.js` (service worker) salva pagina, moduli, `data/plan.json`, three.js e il font. I file del sito sono presi prima dalla rete, così ogni modifica pubblicata su `main` arriva da sola; se la rete manca si usa la copia salvata. Le modifiche fatte nell’editor restano salvate sul dispositivo come nel browser.
 
+## Prova automatica
+
+`npm run prova` apre la piantina in un browser senza finestra, su computer e su telefono, e prova le cose principali: le tre viste, la pagina Casa, la scheda di una stanza, la mappa del sole, le misure, la modifica con il catalogo degli arredi e il file HTML scaricabile. Se qualcosa dà errore lo scrive e termina con un codice d’errore; le foto di ogni passo vanno in `prova-risultati/`.
+
+```sh
+npm install
+npx playwright install chromium   # la prima volta
+npm run prova                     # tutto; oppure: npm run prova -- computer | telefono | file
+```
+
+Su GitHub la stessa prova parte da sola a ogni pull request e su `main` (Actions › *Prova della piantina*).
+
 ## Com’è fatta
 
 ```

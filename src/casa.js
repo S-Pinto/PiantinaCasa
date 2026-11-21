@@ -95,7 +95,7 @@ const cardRay = new THREE.Raycaster(), cardNdc = new THREE.Vector2(), cardPlane 
 let cardDown = null;
 canvas.addEventListener('pointerdown', e => { cardDown = e.isPrimary && e.button === 0 ? [e.clientX, e.clientY, performance.now()] : null; });
 canvas.addEventListener('pointerup', e => {
-  if (!cardDown || st.editing || st.measOn || st.pano || st.mode === 'walk' || st.cmpId) return;
+  if (!cardDown || !st.plan || st.editing || st.measOn || st.pano || st.mode === 'walk' || st.cmpId) return;
   if (Math.hypot(e.clientX - cardDown[0], e.clientY - cardDown[1]) > 6 || performance.now() - cardDown[2] > 600) return;
   const r = canvas.getBoundingClientRect();
   cardNdc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);

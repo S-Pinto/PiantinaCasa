@@ -49,10 +49,11 @@ async function loadPlan(){
 }
 
 /* ------------------------- Puntatore: passeggiata o editor ------------------------- */
-canvas.addEventListener('pointerdown', e => { if (st.mode === 'walk') walkPointerDown(e); else editorDown(e); });
-canvas.addEventListener('pointermove', e => { hoverSys(e); if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
-canvas.addEventListener('pointerup', e => { walkPointerUp(); editorUp(e, false); });
-canvas.addEventListener('pointercancel', e => { walkPointerUp(); editorUp(e, true); });
+/* finché la piantina non è caricata il puntatore non fa nulla (prima un mouse fermo sulla scena dava errore) */
+canvas.addEventListener('pointerdown', e => { if (!st.plan) return; if (st.mode === 'walk') walkPointerDown(e); else editorDown(e); });
+canvas.addEventListener('pointermove', e => { if (!st.plan) return; hoverSys(e); if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
+canvas.addEventListener('pointerup', e => { if (!st.plan) return; walkPointerUp(); editorUp(e, false); });
+canvas.addEventListener('pointercancel', e => { if (!st.plan) return; walkPointerUp(); editorUp(e, true); });
 
 /* ------------------------- Ciclo di render ------------------------- */
 
