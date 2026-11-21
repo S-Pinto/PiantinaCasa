@@ -323,3 +323,26 @@ body[data-pano="1"] .bussola{ display:none; }
 .ghacts{ display:flex; gap:8px; margin-top:8px; }
 .ghacts .btn{ flex:1; }
 .linkbtn{ display:block; border:0; background:none; padding:0; margin-top:8px; text-decoration:underline; cursor:pointer; text-align:left; }
+
+/* ---------- telefono: meno cose sopra la vista 3D ----------
+   La colonna degli strumenti si chiude in un solo pulsante (⋮), barra in alto, joystick e mappa più piccoli. */
+.vtmore{ display:none; }
+@media (max-width:519px), (max-height:500px){
+  .topbar{ top:6px; left:6px; right:6px; gap:4px; padding:4px; border-radius:14px; }
+  .seg button{ height:36px; padding:0 10px; }
+  .ib{ height:36px; min-width:36px; padding:0 8px; border-radius:11px; }
+  svg.i{ width:20px; height:20px; }
+  .menu, .vpanel{ top:52px; }
+  .vtools{ right:6px; padding:4px; gap:2px; border-radius:14px; }
+  .vt{ width:42px; height:42px; }
+  .vt .vl{ display:none; }
+  .vtmore{ display:flex; }
+  .vtools[data-open="0"] .vt:not(.vtmore):not([aria-expanded="true"]){ display:none; }
+  .vtools[data-open="1"] .vtmore{ background:var(--line); }
+  .apanel{ right:56px; width:calc(100% - 66px); }
+  .joy{ left:12px; bottom:20px; width:96px; height:96px; opacity:.85; }
+  .joy .knob{ width:38px; height:38px; margin:-19px 0 0 -19px; }
+  .mm{ right:8px; bottom:20px; width:132px; height:64px; opacity:.9; }
+  .where{ top:auto; right:8px; bottom:88px; padding:3px 10px; font-size:12px; }
+  .hint{ top:52px; }
+}

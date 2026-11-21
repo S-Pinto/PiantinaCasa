@@ -141,7 +141,9 @@
     <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></symbol>
   </svg>
 
-  <div class="vtools glass" id="vtools" role="toolbar" aria-label="Luce, misure e panorama">
+  <div class="vtools glass" id="vtools" role="toolbar" aria-label="Luce, misure e panorama" data-open="0">
+    <button type="button" class="vt vtmore" id="btnVt" aria-expanded="false" title="Mostra o nascondi gli strumenti">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.3" fill="currentColor"></circle><circle cx="12" cy="12" r="1.3" fill="currentColor"></circle><circle cx="12" cy="18.5" r="1.3" fill="currentColor"></circle></svg><span class="vl">Strumenti</span></button>
     <button type="button" class="vt" id="btnHome" aria-pressed="false" title="Casa: stanze e impianti">
       <svg class="i" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span class="vl">Casa</span></button>
     <button type="button" class="vt" id="btnAmb" aria-haspopup="true" aria-expanded="false" title="Luce: giorno, tramonto, notte">

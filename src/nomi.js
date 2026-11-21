@@ -133,8 +133,9 @@ function namesFrame(){
   if (floating && namesRev !== st.rev) buildNames();
   namesG.visible = floating;
   if (floating) layoutNames();
-  /* nomi scritti sul pavimento: in modifica sempre, mentre si cammina se i nomi sono accesi */
-  const flat = st.editing || (st.namesOn && st.mode === 'walk');
+  /* nomi scritti sul pavimento: solo in modifica. Mentre si cammina erano scritte giganti per terra davanti
+     ai piedi: il nome della stanza c'è già accanto alla mappa */
+  const flat = st.editing;
   /* in modifica (vista dall’alto) i nomi stanno sopra agli arredi, così non spariscono sotto un divano */
   labelsG.children.forEach(m => { if (!m.userData.street){ m.visible = flat; m.material.depthTest = !st.editing; m.renderOrder = st.editing ? 7 : 2; } });
 }

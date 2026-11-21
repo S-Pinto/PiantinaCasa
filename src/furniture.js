@@ -694,4 +694,22 @@ Object.assign(FURN, FURN2);
 const CATS = ['Divani e sedute','Tavoli e scrivanie','Letti','Armadi e contenitori','TV e multimedia','Cucina','Elettrodomestici','Clima',
   'Illuminazione','Piante','Bagno','Esterno','Decorazioni e tessili','Animali'];
 
-export { CATS, FURN, GLOW, fbox, fcyl };
+/* Facce sovrapposte: molti arredi sono fatti di scatole che condividono una faccia (il bracciolo a filo
+   del fianco del divano, le ante a filo del mobile…). Due facce nello stesso piano lampeggiano quando ci si muove
+   («farfallio»), soprattutto sul telefono. Rimpicciolisco ogni scatola dopo la prima di pochi decimi di millimetro,
+   un po’ diversi fra una e l’altra: a occhio non cambia niente, ma una faccia resta sempre davanti all’altra. */
+const FACE_STEP = 0.0007;
+function separateFaces(g){
+  let i = 0;
+  g.traverse(o => {
+    if (!o.isMesh || !o.geometry || o.geometry.type !== 'BoxGeometry') return;
+    const p = o.geometry.parameters, k = i++;
+    if (!k) return;
+    const e = FACE_STEP * (1 + (k - 1) % 7);
+    const f = v => Math.max(0.5, (v - 2 * Math.min(e, v * 0.1)) / v);
+    o.scale.x *= f(p.width * o.scale.x); o.scale.y *= f(p.height * o.scale.y); o.scale.z *= f(p.depth * o.scale.z);
+  });
+  return g;
+}
+
+export { CATS, FURN, GLOW, fbox, fcyl, separateFaces };
