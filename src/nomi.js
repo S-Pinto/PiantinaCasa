@@ -94,7 +94,7 @@ const tagNdc = new THREE.Vector3();
 function layoutNames(){
   const W = canvas.clientWidth || 1, Hh = canvas.clientHeight || 1;
   const small = W < 600, rowPx = small ? 13 : 17;       /* altezza della riga del nome, in pixel */
-  const key = W + 'x' + Hh;
+  const key = W + 'x' + Hh + '@' + camera.fov.toFixed(2);     /* in Pianta il campo visivo cambia: senza, i cartellini restano giganti */
   if (key !== namesSizeKey){
     namesSizeKey = key;
     tagItems.forEach(it => [it.full, it.short].forEach(s => {
@@ -135,7 +135,8 @@ function namesFrame(){
   if (floating) layoutNames();
   /* nomi scritti sul pavimento: in modifica sempre, mentre si cammina se i nomi sono accesi */
   const flat = st.editing || (st.namesOn && st.mode === 'walk');
-  labelsG.children.forEach(m => { if (!m.userData.street) m.visible = flat; });
+  /* in modifica (vista dall’alto) i nomi stanno sopra agli arredi, così non spariscono sotto un divano */
+  labelsG.children.forEach(m => { if (!m.userData.street){ m.visible = flat; m.material.depthTest = !st.editing; m.renderOrder = st.editing ? 7 : 2; } });
 }
 
 export { namesFrame };

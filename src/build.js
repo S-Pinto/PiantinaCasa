@@ -305,6 +305,9 @@ function labelTexture(text, color){
   let size = 84; cx.font = '700 ' + size + 'px Figtree, system-ui, sans-serif';
   while (cx.measureText(text).width > 730 && size > 20){ size -= 4; cx.font = '700 ' + size + 'px Figtree, system-ui, sans-serif'; }
   cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  if (!/^rgba\(244/.test(color)){      /* alone chiaro: il nome si legge anche sul parquet scuro */
+    cx.lineJoin = 'round'; cx.lineWidth = size * 0.16; cx.strokeStyle = 'rgba(255,255,255,.75)'; cx.strokeText(text, cv.width/2, cv.height/2 + 4);
+  }
   cx.fillStyle = color; cx.fillText(text, cv.width/2, cv.height/2 + 4);
   const tx = new THREE.CanvasTexture(cv);
   tx.anisotropy = 8; tx.colorSpace = THREE.SRGBColorSpace;

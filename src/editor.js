@@ -966,7 +966,7 @@ function setEditing(on){
   $('btnEdit').setAttribute('aria-pressed', String(on));
   $('editLbl').textContent = on ? 'Fine' : 'Modifica';
   if (on){
-    if (st.mode !== 'plan') setMode('plan');
+    setMode('plan');                                   /* reinquadro anche se ero già in Pianta: ora ci sono barra e strumenti */
     controls.enableRotate = false;
     setLevel(st.level);
   } else {
