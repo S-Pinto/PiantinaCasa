@@ -180,4 +180,14 @@ function setEditLow(on){ st.editLow = on; try { localStorage.setItem(EDIT_LOW_KE
 $('optLow').addEventListener('change', updateLow);
 $('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; updateLow(); });
 
+/* Sul telefono la colonna degli strumenti parte chiusa: il pulsante ⋮ la apre e la richiude (ricordato) */
+const VT_KEY = 'piantina-strumenti';
+try { $('vtools').dataset.open = localStorage.getItem(VT_KEY) === '1' ? '1' : '0'; } catch(_){}
+$('btnVt').setAttribute('aria-expanded', String($('vtools').dataset.open === '1'));
+$('btnVt').addEventListener('click', () => {
+  const on = $('vtools').dataset.open !== '1';
+  $('vtools').dataset.open = on ? '1' : '0'; $('btnVt').setAttribute('aria-expanded', String(on));
+  try { localStorage.setItem(VT_KEY, on ? '1' : '0'); } catch(_){}
+});
+
 export { applyLook, controls, hintEl, initTheme, preset, setEditLow, setHint, setMode, updateLow };

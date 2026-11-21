@@ -3,7 +3,7 @@ import { H, HEAD, S, SILL, WELL, X, Z, clamp, pointInPoly, st } from './core.js'
 import { CMPG, MAING, labelsG, staticG } from './scene.js';
 import { TEXDEF, toTex } from './textures.js';
 import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMatFor, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop } from './materials.js';
-import { FURN } from './furniture.js';
+import { FURN, separateFaces } from './furniture.js';
 import { isH, variantPlan, wallRenderEnds, wallT } from './model.js';
 import { syncVariants } from './variants.js';
 import { mergeStatic } from './prestazioni.js';
@@ -341,6 +341,7 @@ function buildFurn(f, noCollide){
   const d = FURN[f.type]; if (!d) return;
   const g = new THREE.Group();
   d.draw(g, f.w, f.d, f.h, f.col || d.c);
+  separateFaces(g);
   g.position.set(X(f.x), floorElev(f.x, f.y) + (d.z || 0), Z(f.y));
   g.rotation.y = -f.rot * Math.PI / 180;
   furnG.add(g);
