@@ -130,6 +130,19 @@ body[data-editing="1"] .dock{ top:116px; max-height:calc(100% - 184px); }
 .segs button:last-child{ border-right:0; }
 .segs button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
 
+/* catalogo arredi: ricerca e categorie */
+.fsearch{ width:100%; min-height:42px; padding:8px 12px; border:1px solid var(--line); border-radius:12px; background:transparent; color:inherit; font-size:16px; }
+.fcats{ display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 12px; }
+.fcats button{ display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 12px; border:1px solid var(--line); border-radius:999px; background:transparent; color:inherit; cursor:pointer; font-size:13px; font-weight:600; }
+.fcats button small{ font-size:11px; font-weight:700; color:var(--muted); }
+.fcats button[aria-pressed="true"]{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.fcats button[aria-pressed="true"] small{ color:inherit; opacity:.8; }
+@media (max-width:719px){
+  .fcats{ flex-wrap:nowrap; overflow-x:auto; margin:10px -4px 12px; padding:0 4px 4px; scrollbar-width:none; }
+  .fcats::-webkit-scrollbar{ display:none; }
+  .fcats button{ flex:0 0 auto; }
+}
+
 /* ---------- varie ---------- */
 .hint{ position:absolute; z-index:2; left:12px; right:12px; bottom:12px; margin:0 auto; width:max-content; max-width:calc(100% - 24px); padding:9px 16px; border-radius:999px; font-size:13px; color:var(--muted); text-align:center; pointer-events:none; background:var(--panel); border:1px solid var(--line); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
 @media (max-width:719px){ .hint{ bottom:auto; top:64px; } }

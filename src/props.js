@@ -2,7 +2,7 @@ import { $, S, clamp, st } from './core.js';
 import { btn, el, fld, note, numIn, section, selIn, txtIn } from './dom.js';
 import { TEXDEF, cherryBase, gresBase, makeHerringbone, makeMosaicParquet, makeTerracotta, texCanvas } from './textures.js';
 import { FLOORS } from './materials.js';
-import { FURN } from './furniture.js';
+import { CATS, FURN } from './furniture.js';
 import { isH } from './model.js';
 import { labelWpx } from './build.js';
 import { setHint } from './views.js';
@@ -119,21 +119,56 @@ function wallFinishSides(w, h){
   }
 }
 
+/* Catalogo arredi: categorie per tipo di arredo (CATS), con ricerca.
+   I filtri lavorano sul posto, senza ridisegnare la scheda, così la tastiera resta aperta. */
+let furnCat = null, furnQuery = '';
+const norm = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function buildCatalog(){
   const cats = {};
   Object.keys(FURN).forEach(k => { (cats[FURN[k].cat] = cats[FURN[k].cat] || []).push(k); });
-  Object.keys(cats).forEach(c => {
-    propsEl.appendChild(section(c));
-    const row = el('div','tex');
+  const order = CATS.filter(c => cats[c]).concat(Object.keys(cats).filter(c => !CATS.includes(c)));
+  if (!cats[furnCat]) furnCat = (FURN[st.furnType] && FURN[st.furnType].cat) || order[0];
+  const q = el('input','fsearch'); q.type = 'search'; q.placeholder = 'Cerca un arredo (es. lavatrice, pianta…)';
+  q.setAttribute('aria-label','Cerca un arredo'); q.value = furnQuery;
+  const chips = el('div','fcats'), secs = {};
+  order.forEach(c => {
+    const b = el('button', null, c); b.type = 'button'; b.dataset.cat = c;
+    b.appendChild(el('small', null, String(cats[c].length)));
+    b.addEventListener('click', () => { furnCat = c; furnQuery = ''; q.value = ''; apply(); });
+    chips.appendChild(b);
+  });
+  propsEl.append(q, chips);
+  order.forEach(c => {
+    const head = section(c), row = el('div','tex');
     cats[c].forEach(k => {
-      const b = el('button','tx none', FURN[k].n); b.type = 'button';
+      const b = el('button','tx none', FURN[k].n); b.type = 'button'; b.dataset.k = norm(FURN[k].n + ' ' + k + ' ' + c);
       b.style.height = 'auto'; b.style.padding = '12px 4px'; b.style.lineHeight = '1.15';
       b.setAttribute('aria-pressed', String(k === st.furnType));
-      b.addEventListener('click', () => { st.furnType = k; refreshProps(); });
+      b.addEventListener('click', () => { st.furnType = k; furnCat = c; furnQuery = ''; refreshProps(); });
       row.appendChild(b);
     });
-    propsEl.appendChild(row);
+    secs[c] = { head, row }; propsEl.append(head, row);
   });
+  const empty = note('Nessun arredo trovato.');
+  propsEl.appendChild(empty);
+  function apply(){
+    /* ogni parola deve comparire; senza vocale finale, così «pianta» trova anche «Piante» */
+    const t = norm(furnQuery.trim()), words = t.split(/\s+/).filter(Boolean).map(w => w.length > 3 ? w.replace(/[aeiou]$/, '') : w);
+    const hit = k => words.every(w => k.includes(w)); let any = false;
+    order.forEach(c => {
+      let n = 0;
+      secs[c].row.querySelectorAll('button').forEach(b => { const ok = !t || hit(b.dataset.k); b.hidden = !ok; if (ok) n++; });
+      const show = t ? n > 0 : c === furnCat;
+      secs[c].head.hidden = secs[c].row.hidden = !show; if (show) any = true;
+    });
+    secs[furnCat].head.hidden = !t || secs[furnCat].row.hidden;   /* il titolo serve solo nei risultati di ricerca */
+    chips.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(!t && b.dataset.cat === furnCat)));
+    empty.hidden = any;
+    const on = chips.querySelector('[aria-pressed="true"]');   /* su telefono la fila scorre: tieni in vista la categoria scelta */
+    if (on && chips.scrollWidth > chips.clientWidth) chips.scrollLeft = on.offsetLeft - chips.offsetLeft - (chips.clientWidth - on.offsetWidth) / 2;
+  }
+  q.addEventListener('input', () => { furnQuery = q.value; apply(); });
+  apply();
   propsEl.appendChild(note('Scegli un arredo e tocca la pianta per metterlo. Poi lo sposti trascinandolo, lo ruoti col cerchio o dalla scheda, e puoi cambiarne misure e colore.'));
 }
 function refreshProps(){
