@@ -12,6 +12,54 @@ const uid = () => 'i' + (idn++) + Math.random().toString(36).slice(2,5);
 const isH = w => Math.abs(w.y2 - w.y1) < 1e-6;
 const wallT = w => w.k === 'e' ? 8 : 4;
 
+/* ------------------------- Incroci dei muri -------------------------
+   Un’estremità di muro "si aggancia" al muro perpendicolare che le sta davanti (o in cui entra un poco)
+   se il buco fra i due è al massimo JOIN_GAP (24 cm). Serve in due posti:
+   - nel disegno 3D, per chiudere sempre l’incrocio (niente fessure, niente spigoli che sporgono dall’altra parte);
+   - nell’editor, per portare l’estremità esattamente sull’asse dell’altro muro dopo una modifica. */
+const JOIN_GAP = 6;
+function wallJoin(walls, w, end){
+  const h = isH(w), t = wallT(w), dir = end ? 1 : -1, cr = h ? w.y1 : w.x1;
+  const e = end ? (h ? w.x2 : w.y2) : (h ? w.x1 : w.y1);
+  let best = null;
+  for (const o of walls){
+    if (o.id === w.id || isH(o) === h) continue;
+    const ot = wallT(o), oc = h ? o.x1 : o.y1, lo = h ? o.y1 : o.x1, hi = h ? o.y2 : o.x2;
+    if (cr < lo - ot/2 - JOIN_GAP || cr > hi + ot/2 + JOIN_GAP) continue;
+    const d = (oc - e) * dir;                       /* quanto manca all’asse dell’altro muro (negativo: l’ho già passato) */
+    if (d < -ot/2 - 0.01 || d > ot/2 + t/2 + JOIN_GAP) continue;
+    const tee = cr > lo + ot/2 && cr < hi - ot/2;   /* l’altro muro continua dai due lati: incrocio a T */
+    if (!best || Math.abs(d) < Math.abs(best.d)) best = { o:o, oc:oc, ot:ot, d:d, tee:tee, dir:dir };
+  }
+  return best;
+}
+/* fin dove disegnare le due estremità di un muro (lungo il suo asse) */
+function wallRenderEnds(walls, w){
+  const h = isH(w), t = wallT(w), a = h ? w.x1 : w.y1, b = h ? w.x2 : w.y2;
+  return [0, 1].map(end => {
+    const j = wallJoin(walls, w, end), e = end ? b : a, dir = end ? 1 : -1;
+    if (!j) return e + dir * (t/2 + 0.04);
+    /* a T entro a metà dell’altro muro; ad angolo arrivo fino alla sua faccia esterna */
+    return j.oc + dir * (j.tee ? j.ot/4 : j.ot/2);
+  });
+}
+/* porta sull’asse del muro agganciato le estremità dei muri indicati; restituisce quante ne ha sistemate */
+function snapWallEnds(walls, ids){
+  let n = 0;
+  walls.forEach(w => {
+    if (ids && ids.indexOf(w.id) < 0) return;
+    const h = isH(w);
+    [0, 1].forEach(end => {
+      const j = wallJoin(walls, w, end);
+      if (!j || Math.abs(j.d) < 0.01) return;
+      const k = h ? (end ? 'x2' : 'x1') : (end ? 'y2' : 'y1');
+      const other = h ? (end ? w.x1 : w.x2) : (end ? w.y1 : w.y2);
+      if (end ? j.oc < other + 4 : j.oc > other - 4) return;   /* il muro diventerebbe troppo corto */
+      w[k] = j.oc; n++;
+    });
+  });
+  return n;
+}
 const okCol = c => (typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) ? c.toLowerCase() : undefined;
 const okTex = t => (typeof t === 'string' && TEXDEF[t]) ? t : undefined;
 const normSide = o => (o && typeof o === 'object') ? { col:okCol(o.col), tx:okTex(o.tx), h:(typeof o.h === 'number' && isFinite(o.h) && o.h > 0) ? clamp(o.h, .1, 4) : undefined, tcol:okCol(o.tcol) } : undefined;
@@ -148,6 +196,67 @@ function variantPlan(id){
   const c = jc(st.plan); storeActive(c); loadVariant(c, id); return c;
 }
 
+/* ------------------------- Unione dei salvataggi -------------------------
+   Il salvataggio sul dispositivo nasce da una certa piantina pubblicata (base). Se nel frattempo
+   ne è stata pubblicata una nuova, unisco le due cose elemento per elemento (per id):
+   quello che hai cambiato tu resta com'è, quello che non hai toccato prende la versione nuova,
+   gli elementi aggiunti da una parte o dall'altra ci sono tutti, quelli che hai eliminato restano eliminati.
+   Le versioni di arredo si uniscono allo stesso modo (arredi e finiture di ciascuna). */
+const sameJ = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+/* copia con tutte le versioni complete (anche quella attiva) e senza finiture sugli elementi comuni */
+function expandPlan(p){
+  const c = jc(p); storeActive(c);
+  Object.keys(FIN_KEYS).forEach(k => c[k].forEach(o => {
+    FIN_KEYS[k].forEach(f => { if (f !== 'm') delete o[f]; });
+    if (k === 'floors') delete o.m;
+    if (k === 'walls') o.ops.forEach(op => { delete op.col; });
+  }));
+  delete c.furniture;
+  return c;
+}
+function mergeList(base, mine, pub){
+  const B = new Map((base || []).map(o => [o.id, o])), M = new Set(mine.map(o => o.id)), out = [];
+  const U = new Map(pub.map(o => [o.id, o]));
+  mine.forEach(o => {
+    if (!B.has(o.id)){ out.push(o); return; }                  /* aggiunto da te */
+    if (!sameJ(o, B.get(o.id))){ out.push(o); return; }       /* cambiato da te */
+    if (U.has(o.id)) out.push(U.get(o.id));                    /* non toccato: versione nuova (o tolto se non c'è più) */
+  });
+  pub.forEach(o => { if (!M.has(o.id) && !B.has(o.id)) out.push(o); });   /* aggiunto nella nuova */
+  return out;
+}
+function mergeMap(base, mine, pub){
+  const out = {}, b = base || {}, m = mine || {}, u = pub || {};
+  Object.keys(m).forEach(id => {
+    if (!(id in b) || !sameJ(m[id], b[id])) out[id] = m[id];
+    else if (id in u) out[id] = u[id];
+  });
+  Object.keys(u).forEach(id => { if (!(id in m) && !(id in b)) out[id] = u[id]; });
+  return out;
+}
+/* base può mancare (salvataggi della versione precedente dell'app): allora muri, pavimenti, colonne e parapetti
+   vengono dalla piantina nuova, e del mio salvataggio tengo arredi, finiture, nomi e impianti */
+function mergePlans(baseP, mineP, pubP){
+  const m = expandPlan(mineP), u = expandPlan(pubP), b = baseP ? expandPlan(baseP) : null;
+  const out = m;
+  ['walls','columns','floors','rails'].forEach(k => { out[k] = b ? mergeList(b[k], m[k], u[k]) : u[k]; });
+  ['labels','sys','runs'].forEach(k => { out[k] = mergeList(b && b[k], m[k], u[k]); });
+  out.variants = mergeList(b && b.variants, m.variants, u.variants).map(v => {
+    const bv = b && b.variants.find(x => x.id === v.id), mv = m.variants.find(x => x.id === v.id), uv = u.variants.find(x => x.id === v.id);
+    if (!mv || !uv) return v;
+    const fin = {};
+    Object.keys(FIN_KEYS).forEach(k => { fin[k] = mergeMap(bv && bv.fin[k], mv.fin[k], uv.fin[k]); });
+    return { id:v.id, name:(!bv || mv.name !== bv.name) ? mv.name : uv.name,
+      furniture:bv ? mergeList(bv.furniture, mv.furniture, uv.furniture) : mv.furniture, fin:fin };
+  });
+  if (!out.variants.length) return normalize(mineP);
+  const act = out.variants.some(v => v.id === m.active) ? m.active : out.variants[0].id;
+  const a = out.variants.find(v => v.id === act);
+  out.furniture = a.furniture || []; out.active = act;
+  putFinishes(out, a.fin);
+  return normalize(out);
+}
+
 /* Testo JSON leggibile e adatto a git: un elemento per riga dentro ogni elenco */
 function planToJson(p){
   const keys = Object.keys(p), out = ['{'];
@@ -161,4 +270,4 @@ function planToJson(p){
   return out.join('\n') + '\n';
 }
 
-export { activeVar, isH, loadVariant, normalize, planToJson, storeActive, uid, variantPlan, wallT };
+export { activeVar, isH, loadVariant, mergePlans, normalize, planToJson, snapWallEnds, storeActive, uid, variantPlan, wallJoin, wallRenderEnds, wallT };

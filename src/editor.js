@@ -3,12 +3,12 @@ import { $, CX, CY, S, byId, clamp, clone, isRectPts, pointInPoly, polyArea, seg
 import { el, typing } from './dom.js';
 import { camera, canvas } from './scene.js';
 import { FURN } from './furniture.js';
-import { isH, normalize, uid, wallT } from './model.js';
+import { isH, normalize, snapWallEnds, uid, wallJoin, wallT } from './model.js';
 import { labelWpx, rebuild } from './build.js';
-import { controls, hintEl, setHint, setMode, updateLow } from './views.js';
+import { controls, hintEl, setEditLow, setHint, setMode, updateLow } from './views.js';
 import { narrowUI, refreshProps } from './props.js';
 import { setCompare } from './variants.js';
-import { scheduleSave } from './storage.js';
+import { flushSave, scheduleSave } from './storage.js';
 import { RUNK, SYS, fmtM, layerOn, placeSys, runKind, runLen, setLayer, sysHit, sysType, wallSnap } from './impianti.js';
 
 /* =========================================================================
@@ -32,7 +32,7 @@ const LEVELS = {
 const LEVEL_KEY = 'piantina-livello-modifica';
 const levelOf = type => Object.keys(LEVELS).find(k => LEVELS[k].types.indexOf(type) >= 0);
 const LEVEL_TIPS = {
-  pareti:'Livello Pareti: muri, porte, finestre e vetrate. Pavimenti e arredi sono bloccati.',
+  pareti:'Livello Pareti: muri, porte, finestre e vetrate. Gli arredi sono nascosti (pulsante Arredi per vederli).',
   pavimenti:'Livello Pavimenti: stanze e nomi. Muri e arredi sono bloccati.',
   arredi:'Livello Arredi: muri e pavimenti sono bloccati. Tocca un arredo per spostarlo, oppure Aggiungi.',
   impianti:'Livello Impianti: prese, luci, tubi e sensori. Il resto della casa è bloccato.'
@@ -58,7 +58,9 @@ const TIPS = {
 /* arredi che si appoggiano al muro con lo schienale (si girano da soli quando li avvicini a un muro) */
 const WALLBACK = new Set(['divano','mobiletv','libreria','vetrina','cucina','pensile','frigo','lavatrice','letto2','letto1','comodino','armadio','cassettiera','scrivania','lavabo','wc','bidet','vasca',
   'tvparete','colonnaforno','mobilealto','cassettone','scaffale','lavabososp','specchio','postazionepc','listelli','mensoleled','gradinigatto','tende',
-  'quadri','armadiospecchi','paretetv','mobileled','pensilevetro','barbecue','scaffalescala','ledparete']);
+  'quadri','armadiospecchi','paretetv','mobileled','pensilevetro','barbecue','scaffalescala','ledparete',
+  'divanoang','panca','madia','scarpiera','consolle','tvpiedistallo','asciugatrice','colonnabucato','lavastoviglie','frigoamericano','robot','aspirapolvere',
+  'cantinetta','split','unitaesterna','termoarredo','radiatoreart','applique','mobilebagno','divanoesterno','docciaesterna','specchioterra','orologio','lettiera']);
 
 /* ---------- puntatore sulla pianta ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), gplane = new THREE.Plane(new THREE.Vector3(0,1,0),0), hitV = new THREE.Vector3();
@@ -69,6 +71,10 @@ function ground(e){
   if (!ray.ray.intersectPlane(gplane, hitV)) return null;
   return [hitV.x/S + CX, hitV.z/S + CY];
 }
+/* dito o mouse: col dito le zone da toccare sono più grandi */
+let touchPtr = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+const TOUCH_K = 1.8;
+const hitTol = () => tolPx() * (touchPtr ? TOUCH_K : 1);
 function tolPx(){
   const d = Math.max(2, camera.position.distanceTo(controls.target));
   const wpp = 2*d*Math.tan(camera.fov*Math.PI/360) / Math.max(1, canvas.clientHeight);
@@ -261,9 +267,10 @@ function setSel(h){
 }
 function validateSel(){ if (st.sel && !selItem()) st.sel = null; }
 
-/* Arredi sotto il dito, dal primo da scegliere all'ultimo. Prima i mobili grandi (pergola, tappeti, letti...)
-   di cui tocchi il bordo, poi dal più piccolo al più grande: così il tavolo sotto la pergola si prende toccandolo,
-   la pergola toccandone il telaio, e toccando di nuovo nello stesso punto si passa a quello sotto. */
+/* Arredi sotto il dito, dal primo da scegliere all'ultimo. Prima un oggetto piccolo toccato sopra, poi i mobili
+   grandi (pergola, tappeti, letti...) di cui tocchi il bordo e gli oggetti piccoli toccati lì vicino, poi il resto
+   dal più piccolo al più grande: così il comodino accanto al letto si prende anche col dito, il tavolo sotto la
+   pergola toccandolo, la pergola toccandone il telaio; toccando di nuovo nello stesso punto si passa a quello sotto. */
 const BIG_PX = 1.6 / (S*S);                        // oltre 1,6 m² un arredo si sceglie anche dal bordo
 function furnAt(px, py, tol){
   const out = [];
@@ -271,17 +278,23 @@ function furnAt(px, py, tol){
     const th = f.rot * Math.PI / 180, dx = px - f.x, dy = py - f.y;
     const lx = dx * Math.cos(th) + dy * Math.sin(th), ly = -dx * Math.sin(th) + dy * Math.cos(th);
     const hw = f.w / S / 2, hd = f.d / S / 2;
-    if (Math.abs(lx) > hw + tol*.3 || Math.abs(ly) > hd + tol*.3) return;
-    const edge = Math.min(hw - Math.abs(lx), hd - Math.abs(ly)) <= tol*.7 && 4*hw*hd >= BIG_PX;
-    out.push({ id:f.id, edge:edge, area:hw*hd, i:i });
+    /* gli oggetti piccoli si prendono anche toccandoci vicino: la zona utile è almeno grande quanto un dito */
+    const mh = tol * .9, ex = Math.max(tol*.3, mh - hw), ey = Math.max(tol*.3, mh - hd);
+    if (Math.abs(lx) > hw + ex || Math.abs(ly) > hd + ey) return;
+    const big = 4*hw*hd >= BIG_PX, edge = big && Math.min(hw - Math.abs(lx), hd - Math.abs(ly)) <= tol*.7;
+    const inside = Math.abs(lx) <= hw && Math.abs(ly) <= hd;
+    /* prima un oggetto piccolo toccato proprio sopra, poi il bordo dei mobili grandi o un oggetto piccolo
+       toccato lì vicino (vince il più piccolo), infine l'interno dei mobili grandi */
+    const rank = (!big && inside) ? 0 : (edge || !big) ? 1 : 2;
+    out.push({ id:f.id, rank:rank, area:hw*hd, i:i });
   });
-  out.sort((a, b) => (b.edge - a.edge) || (a.area - b.area) || (b.i - a.i));
+  out.sort((a, b) => (a.rank - b.rank) || (a.area - b.area) || (b.i - a.i));
   return out.map(o => o.id);
 }
 
 /* Elemento sotto il puntatore. Con allowed = elenco di tipi guarda solo quelli (il livello attivo). */
 function hitTest(px, py, allowed){
-  const tol = tolPx(), ok = t => !allowed || allowed.indexOf(t) >= 0;
+  const tol = hitTol(), ok = t => !allowed || allowed.indexOf(t) >= 0;
   if (ok('sys') || ok('run')){ const sh = sysHit(px, py, tol); if (sh && ok(sh.type)) return sh; }
   if (ok('op')) for (const w of st.plan.walls){
     const t = wallT(w), h = isH(w), c = h ? w.y1 : w.x1;
@@ -328,7 +341,7 @@ function getHandles(){
   if (it.type === 'column'){ const c = it.obj; return [{ k:'tl', x:c.x0, y:c.y0 }, { k:'br', x:c.x1, y:c.y1 }]; }
   if (it.type === 'furn'){
     /* sul telefono (pianta vista da lontano) il cerchio per ruotare si allontana dall'arredo, così non si tocca per sbaglio */
-    const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + Math.max(7, tolPx()*1.6);
+    const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + Math.max(7, hitTol() * 2.3);
     return [{ k:'rot', x:f.x - Math.sin(th) * off, y:f.y + Math.cos(th) * off }];
   }
   if (it.type === 'floor' || it.type === 'rail' || it.type === 'run') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
@@ -375,6 +388,7 @@ function nudge(dx, dy){
       if (!m && att.length) return;
       shiftItem('wall', w, h ? (att.length ? 0 : dx) : m, h ? m : (att.length ? 0 : dy));
       att.forEach(a => { const b = byId(st.plan.walls, a.id); if (b) b[a.key] = a.orig + m; });
+      joinWalls([w.id]);
     }
     else shiftItem(it.type, it.obj, dx, dy);
     if (it.type === 'sys' && SYS[it.obj.t].m === 'w'){
@@ -411,22 +425,28 @@ function duplicateSel(){
   if (nid){ st.sel = { type:it.type, id:nid }; st.overlayDirty = true; refreshProps(); }
 }
 
+/* muri che finiscono contro w (anche con un piccolo buco, vedi wallJoin): quando w si sposta li allungo o accorcio */
 function attachedFor(w){
   const list = []; if (!opt.link) return list;
   const h = isH(w);
   st.plan.walls.forEach(b => {
     if (b.id === w.id || isH(b) === h) return;
-    if (h){
-      if (b.x1 < w.x1 - 1.5 || b.x1 > w.x2 + 1.5) return;
-      if (Math.abs(b.y1 - w.y1) <= 1.5) list.push({ id:b.id, key:'y1', orig:b.y1 });
-      if (Math.abs(b.y2 - w.y1) <= 1.5) list.push({ id:b.id, key:'y2', orig:b.y2 });
-    } else {
-      if (b.y1 < w.y1 - 1.5 || b.y1 > w.y2 + 1.5) return;
-      if (Math.abs(b.x1 - w.x1) <= 1.5) list.push({ id:b.id, key:'x1', orig:b.x1 });
-      if (Math.abs(b.x2 - w.x1) <= 1.5) list.push({ id:b.id, key:'x2', orig:b.x2 });
-    }
+    [0, 1].forEach(end => {
+      const j = wallJoin(st.plan.walls, b, end);
+      if (!j || j.o.id !== w.id) return;
+      const key = h ? (end ? 'y2' : 'y1') : (end ? 'x2' : 'x1');
+      /* parto dall'asse di w, così dopo lo spostamento l'estremità ci finisce sopra esatta */
+      list.push({ id:b.id, key:key, orig:h ? w.y1 : w.x1 });
+    });
   });
   return list;
+}
+/* dopo una modifica ai muri: le estremità vicine a un altro muro vanno esattamente sul suo asse */
+function joinWalls(ids){
+  const set = new Set(ids);
+  /* anche i muri che toccano quelli modificati */
+  st.plan.walls.forEach(b => { [0, 1].forEach(end => { const j = wallJoin(st.plan.walls, b, end); if (j && set.has(j.o.id)) set.add(b.id); }); });
+  return snapWallEnds(st.plan.walls, Array.from(set));
 }
 /* distanze nette fra un muro e i muri paralleli più vicini (larghezza delle stanze ai due lati) */
 function wallGaps(w){
@@ -470,6 +490,7 @@ function setTool(t){
 function setLevel(l){
   if (!LEVELS[l]) l = 'arredi';
   st.level = l;
+  if (l === 'pareti') st.wallFurn = false;             /* entrando nei muri gli arredi si nascondono sempre */
   try { localStorage.setItem(LEVEL_KEY, l); } catch(_){}
   document.querySelectorAll('#levels button[data-level]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.level === l)));
   document.body.dataset.level = l;
@@ -477,6 +498,7 @@ function setLevel(l){
   buildTools();
   st.sel = null;
   setTool('select');
+  updateLow();
 }
 const ICONS = {
   select:'<svg class="i" viewBox="0 0 24 24"><path d="M5 3l14 8-6.2 2L16.5 20l-3 1.4-3.6-6.8L5 19z" fill="currentColor" stroke="none"/></svg>',
@@ -496,6 +518,10 @@ const ICONS = {
   label:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18l4.5-11L13 18M5.7 14h5.6M16 9.5h4M18 9.5V18"/></svg>',
   sys:'<svg class="i" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg>',
   run:'<svg class="i" viewBox="0 0 24 24"><path d="M4 18h7V7h9"/><circle cx="4" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="7" r="1.8" fill="currentColor"/></svg>',
+  wallLow:'<svg class="i" viewBox="0 0 24 24"><path d="M3 19h18"/><rect x="5" y="14" width="5" height="5" fill="currentColor" stroke="none"/><rect x="14" y="14" width="5" height="5" fill="currentColor" stroke="none"/><path d="M12 5v6M9.5 8.5L12 11l2.5-2.5"/></svg>',
+  wallHigh:'<svg class="i" viewBox="0 0 24 24"><path d="M3 21h18"/><rect x="5" y="6" width="5" height="15" fill="currentColor" stroke="none"/><rect x="14" y="6" width="5" height="15" fill="currentColor" stroke="none"/></svg>',
+  eye:'<svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff:'<svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" opacity=".5"/><circle cx="12" cy="12" r="3" opacity=".5"/><path d="M4 4l16 16"/></svg>',
   snap:'<svg class="i" viewBox="0 0 24 24"><path d="M6 4v8a6 6 0 0 0 12 0V4"/><path d="M6 4h3.5v8a2.5 2.5 0 0 0 5 0V4H18"/><path d="M6 8h3.5M14.5 8H18"/></svg>',
   pareti:'<svg class="i" viewBox="0 0 24 24"><path d="M3 4h18v16H3z"/><path d="M3 11h9v9M12 4v3"/></svg>',
   pavimenti:'<svg class="i" viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5z"/><path d="M7.5 6.5l9 5M16.5 6.5l-9 5" opacity=".55"/><path d="M3 13.5l9 5 9-5"/></svg>',
@@ -520,6 +546,25 @@ function buildTools(){
   sb.setAttribute('aria-pressed', String(opt.snap));
   sb.addEventListener('click', () => setSnap(!opt.snap));
   d.appendChild(sb);
+  /* muri alti o bassi mentre modifichi */
+  const hb = el('button','tl'); hb.type = 'button'; hb.id = 'btnWallH';
+  const syncH = () => { hb.innerHTML = st.editLow ? ICONS.wallLow : ICONS.wallHigh; hb.appendChild(el('span', null, st.editLow ? 'Muri bassi' : 'Muri alti'));
+    hb.title = st.editLow ? 'Muri bassi: tocca per vederli alti' : 'Muri alti: tocca per abbassarli'; };
+  syncH();
+  hb.addEventListener('click', () => { setEditLow(!st.editLow); syncH(); flash(st.editLow ? 'Muri bassi: vedi meglio la pianta.' : 'Muri alti, come nella realtà.'); });
+  d.appendChild(hb);
+  if (st.level === 'pareti'){
+    /* gli arredi qui sono nascosti: si possono riaccendere */
+    const fb = el('button','tl'); fb.type = 'button'; fb.id = 'btnWallFurn';
+    const syncF = () => { fb.innerHTML = st.wallFurn ? ICONS.eye : ICONS.eyeOff; fb.appendChild(el('span', null, 'Arredi'));
+      fb.title = st.wallFurn ? 'Arredi visibili: tocca per nasconderli' : 'Arredi nascosti mentre modifichi i muri: tocca per vederli'; };
+    syncF();
+    fb.addEventListener('click', () => { st.wallFurn = !st.wallFurn; syncF(); updateLow(); });
+    d.appendChild(fb);
+  }
+  /* sul telefono la barra scorre: i due pulsanti di vista li metto subito dopo Seleziona, così si vedono */
+  const first = d.firstChild, vb = [hb, $('btnWallFurn')].filter(Boolean);
+  if (first && first.nextSibling){ const ref = first.nextSibling; vb.forEach(b => d.insertBefore(b, ref)); d.insertBefore(el('div','sep'), ref); }
 }
 function setSnap(on){
   opt.snap = on; $('optSnap').checked = on;
@@ -555,13 +600,16 @@ function editorDown(e){
   try { canvas.setPointerCapture(e.pointerId); } catch(_){}
   canvas.focus();
   lastPtr = [e.clientX, e.clientY]; freeMove = e.altKey;
-  const before = JSON.stringify(st.plan), tol = tolPx();
+  const wasTouch = touchPtr; touchPtr = e.pointerType === 'touch' || e.pointerType === 'pen';
+  if (wasTouch !== touchPtr) st.overlayDirty = true;
+  const before = JSON.stringify(st.plan), tol = hitTol();
 
   if (st.tool === 'select'){
-    const onSel = selItem() && selItem().type === 'furn' && furnAt(p[0], p[1], 0).indexOf(st.sel.id) >= 0;
+    /* toccando l'arredo scelto (o vicino, se è piccolo) lo si sposta: si ruota solo dal cerchio, che sta più in là */
+    const onSel = selItem() && selItem().type === 'furn' && furnAt(p[0], p[1], tol).indexOf(st.sel.id) >= 0;
     for (const h of getHandles()){
-      if (h.k === 'rot' && onSel) continue;             // toccando dentro l'arredo lo si sposta, non lo si ruota
-      if (Math.hypot(h.x - p[0], h.y - p[1]) <= tol*1.3){
+      if (h.k === 'rot' && onSel) continue;
+      if (Math.hypot(h.x - p[0], h.y - p[1]) <= tol * (h.k === 'rot' ? 1.1 : 1.3)){
         const it = selItem();
         st.drag = { kind:'handle', h:h, before:before, start:p, cx:e.clientX, cy:e.clientY, armed:false, orig:clone(it.type === 'op' ? it.wall : it.obj),
                  g:guides(it.type === 'op' ? null : it.obj.id), rect:it.type === 'floor' && isRectPts(it.obj.pts) };
@@ -736,6 +784,8 @@ function editorUp(e, cancelled){
   if (d.kind === 'draw') return finishDraw(d);
   if (d.kind === 'place'){ if (!d.moved) doPlace(d); return; }
   if (JSON.stringify(st.plan) !== d.before){
+    const it0 = selItem();
+    if (it0 && it0.type === 'wall') joinWalls([it0.obj.id].concat((d.attached || []).map(a => a.id)));
     const keep = st.sel; st.plan = normalize(st.plan); st.sel = keep; validateSel();
     pushUndo(d.before); rebuild(); st.needRebuild = false;
   }
@@ -811,7 +861,7 @@ function finishDraw(d){
   if (st.tool === 'wallE' || st.tool === 'wallI'){
     /* resto nello strumento: si disegnano più muri di fila, partendo dalla fine del precedente */
     const w = { id:uid(), x1:Math.min(dr.x0,dr.x1), y1:Math.min(dr.y0,dr.y1), x2:Math.max(dr.x0,dr.x1), y2:Math.max(dr.y0,dr.y1), k:st.tool === 'wallE' ? 'e' : 'i', ops:[] };
-    st.plan.walls.push(w); pushUndo(before); rebuild();
+    st.plan.walls.push(w); joinWalls([w.id]); st.plan = normalize(st.plan); pushUndo(before); rebuild();
     flash('Muro di ' + fmtLen(len) + ' aggiunto. Trascina ancora per il prossimo, Esc o Seleziona per finire.', 3500);
   } else {
     const r = { id:uid(), kind:st.tool === 'glazed' ? 'glazed' : st.tool === 'fence' ? 'fence' : 'rail', pts:[[dr.x0,dr.y0],[dr.x1,dr.y1]] };
@@ -916,15 +966,16 @@ function setEditing(on){
   $('btnEdit').setAttribute('aria-pressed', String(on));
   $('editLbl').textContent = on ? 'Fine' : 'Modifica';
   if (on){
-    if (st.mode !== 'plan') setMode('plan');
+    setMode('plan');                                   /* reinquadro anche se ero già in Pianta: ora ci sono barra e strumenti */
     controls.enableRotate = false;
     setLevel(st.level);
   } else {
     controls.enableRotate = true;
     st.sel = null; st.draft = null; st.drag = null; pointers.clear(); canvas.style.cursor = ''; snapLines.length = 0; readout('');
+    flushSave();                                       /* premendo Fine le modifiche sono già al sicuro */
   }
   updateLow(); st.overlayDirty = true; refreshProps(); histBtns();
 }
 $('btnEdit').addEventListener('click', () => setEditing(!st.editing));
 
-export { GRID, LEVEL_TIPS, TIPS, buildDock, clearTxt, clearances, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, fmtLen, furnHalf, getHandles, ground, histBtns, mutate, obstacleFaces, opt, pickInStack, pushUndo, revealSel, rightAngle, selItem, selectStacked, setEditing, setSel, snapLines, splitRail, tolPx, validateSel, wallGaps };
+export { GRID, LEVEL_TIPS, TIPS, buildDock, clearTxt, clearances, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, fmtLen, furnHalf, getHandles, ground, histBtns, mutate, obstacleFaces, opt, pushUndo, revealSel, rightAngle, selItem, selectStacked, setEditing, setSel, snapLines, splitRail, tolPx, validateSel, wallGaps };

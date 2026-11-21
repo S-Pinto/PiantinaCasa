@@ -1,15 +1,21 @@
 import { $, st } from './core.js';
-import { normalize, planToJson } from './model.js';
+import { activeVar, mergePlans, normalize, planToJson } from './model.js';
 import { rebuild } from './build.js';
 import { flash, pushUndo, validateSel } from './editor.js';
 import { refreshProps } from './props.js';
 
 /* Salvataggi (dispositivo, account Claude), file condiviso, file HTML da inviare, import/export. */
 
-/* ---------- salvataggio ---------- */
-/* chiave locale legata alla piantina pubblicata: se cambia data/plan.json i vecchi salvataggi non la coprono */
-const storageKey = () => 'piantina-via-verona-v2' + (st.planKey ? '-' + st.planKey : '');
-let dbDoc = null, saveTimer = null, userEdited = false;
+/* ---------- salvataggio ----------
+   Un solo salvataggio sul dispositivo, che non dipende dalla piantina pubblicata: prima la chiave
+   cambiava a ogni aggiornamento del sito e le modifiche sembravano sparite. Insieme alla piantina
+   salvo anche la piantina pubblicata da cui è partita (base): se il sito viene aggiornato,
+   unisco le novità alle tue modifiche (mergePlans) invece di buttarne via una delle due. */
+const LOCAL_KEY = 'piantina-via-verona-v3';
+const OLD_PREFIX = 'piantina-via-verona-v2';
+/* nel file HTML scaricato ogni file ha il suo salvataggio (la piantina è dentro il file) */
+const storageKey = () => LOCAL_KEY + (st.publishedTs ? '-' + st.publishedTs : '');
+let dbDoc = null, saveTimer = null, userEdited = false, dirty = false;
 function statusMsg(t){
   $('status').textContent = t;
   /* fuori dalla modifica la riga di stato è nascosta: il messaggio compare in basso per qualche secondo */
@@ -24,30 +30,77 @@ function updateFileNote(){
 }
 function scheduleSave(){
   updateFileNote();
-  userEdited = true; statusMsg('Modifiche non ancora salvate…');
-  clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 800);
+  userEdited = true; dirty = true; statusMsg('Modifiche non ancora salvate…');
+  clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400);
+}
+function saveRecord(ts){ return { ts:ts, json:JSON.stringify(st.plan), base:st.publishedJson, key:st.planKey }; }
+function saveLocal(rec){
+  try { localStorage.setItem(storageKey(), JSON.stringify(rec)); return true; }
+  catch(e){
+    /* spazio pieno: tolgo i salvataggi vecchi e riprovo */
+    try { oldKeys().forEach(k => localStorage.removeItem(k)); localStorage.setItem(storageKey(), JSON.stringify(rec)); return true; } catch(_){ return false; }
+  }
 }
 async function saveNow(){
   clearTimeout(saveTimer);
-  const json = JSON.stringify(st.plan), ts = Date.now();
-  let local = false, remote = false;
-  try { localStorage.setItem(storageKey(), JSON.stringify({ ts:ts, json:json })); local = true; } catch(e){}
-  if (dbDoc){ try { await dbDoc.set({ json:json, ts:ts }); remote = true; } catch(e){} }
+  const rec = saveRecord(Date.now());
+  const local = saveLocal(rec);
+  dirty = false;
+  let remote = false;
+  if (dbDoc){ try { await dbDoc.set(rec); remote = true; } catch(e){} }
   const t = new Date().toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
-  statusMsg(remote ? 'Salvato alle ' + t + ' sul tuo account.'
-          : local  ? 'Salvato alle ' + t + ' su questo dispositivo.'
+  const v = activeVar(st.plan), vn = (v && st.plan.variants.length > 1) ? ' (versione «' + v.name + '»)' : '';
+  statusMsg(remote ? 'Salvato alle ' + t + ' sul tuo account' + vn + '.'
+          : local  ? 'Salvato alle ' + t + ' su questo dispositivo' + vn + '.'
                    : 'Non sono riuscito a salvare. Usa Esporta per conservare la piantina.');
 }
-function tryApply(json){
+/* salvataggio immediato quando la pagina va in secondo piano o si chiude (sul telefono il timer non partirebbe più) */
+function flushSave(){ if (dirty){ clearTimeout(saveTimer); saveLocal(saveRecord(Date.now())); dirty = false; if (dbDoc) dbDoc.set(saveRecord(Date.now())).catch(() => {}); } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); });
+window.addEventListener('pagehide', flushSave);
+/* salvataggi della versione precedente, uno per ogni piantina pubblicata */
+function oldKeys(){
+  const out = [];
+  try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k && k.indexOf(OLD_PREFIX) === 0) out.push(k); } } catch(e){}
+  return out;
+}
+/* Porta nella pagina un salvataggio: uguale alla piantina pubblicata di oggi, oppure unito alle sue novità */
+function applySaved(o){
   try {
-    const n = normalize(JSON.parse(json));
-    if (!n.walls.length) return false;
-    st.plan = n; rebuild(); validateSel(); st.overlayDirty = true; refreshProps(); return true;
-  } catch(e){ return false; }
+    if (!o || !o.json) return false;
+    const mine = normalize(JSON.parse(o.json));
+    if (!mine.walls.length) return false;
+    const pub = JSON.parse(st.publishedJson);
+    let n = mine, merged = false;
+    if (o.base !== st.publishedJson){
+      const base = o.base ? normalize(JSON.parse(o.base)) : null;
+      n = mergePlans(base, mine, pub); merged = true;
+    }
+    st.plan = n; rebuild(); validateSel(); st.overlayDirty = true; refreshProps();
+    if (merged) setTimeout(() => flash('La piantina è stata aggiornata: ho unito le novità alle tue modifiche.', 5000), 1500);
+    return true;
+  } catch(e){ console.error('Salvataggio non applicato', e); return false; }
+}
+function readLocal(){
+  let best = null;
+  try { const raw = localStorage.getItem(storageKey()); if (raw) best = JSON.parse(raw); } catch(e){}
+  /* nessun salvataggio nuovo: recupero il più recente fra quelli vecchi (erano legati a ogni aggiornamento del sito) */
+  if (!best && !st.publishedTs) oldKeys().forEach(k => {
+    try {
+      const o = JSON.parse(localStorage.getItem(k));
+      /* se era legato alla piantina pubblicata di oggi la base è nota, altrimenti no */
+      if (o && o.json && (!best || (o.ts || 0) > (best.ts || 0))) best = { ts:o.ts || 0, json:o.json, base:k === OLD_PREFIX + '-' + st.planKey ? st.publishedJson : null };
+    } catch(e){}
+  });
+  return best;
 }
 async function initStorage(){
   let localTs = 0;
-  try { const raw = localStorage.getItem(storageKey()); if (raw){ const o = JSON.parse(raw); if (o && o.json && (o.ts || 0) > st.publishedTs && tryApply(o.json)) localTs = o.ts || 0; } } catch(e){}
+  const lo = readLocal();
+  if (lo && (lo.ts || 0) > st.publishedTs && applySaved(lo)){
+    localTs = lo.ts || 0;
+    if (!lo.key) saveLocal(saveRecord(localTs || Date.now()));   /* passo al formato nuovo */
+  }
   try {
     if (!window.claude || !window.claude.use) return;
     const caps = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
@@ -58,7 +111,7 @@ async function initStorage(){
     const snap = await dbDoc.get();
     if (snap.exists){
       const d = snap.data();
-      if (d && d.json && (d.ts || 0) > Math.max(localTs, st.publishedTs) && !userEdited && tryApply(d.json)) statusMsg('Piantina caricata dal tuo account.');
+      if (d && d.json && (d.ts || 0) > Math.max(localTs, st.publishedTs) && !userEdited && applySaved(d)) statusMsg('Piantina caricata dal tuo account.');
       else if (d && localTs > (d.ts || 0) && !userEdited) saveNow();
     } else if (localTs && !userEdited) saveNow();
   } catch(e){}
@@ -201,4 +254,4 @@ $('reset').addEventListener('click', () => {
   statusMsg('Piantina originale ripristinata. Puoi ancora annullare.');
 });
 
-export { initArtifact, initFileUi, initStorage, scheduleSave };
+export { flushSave, initArtifact, initFileUi, initStorage, scheduleSave };

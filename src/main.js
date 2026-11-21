@@ -13,6 +13,8 @@ import { contextFrame } from './contesto.js';
 import { initRoof, roofFrame } from './tetto.js';
 import { measFrame } from './misure.js';
 import { namesFrame } from './nomi.js';
+import { sunFrame } from './sole.js';
+import { casaFrame } from './casa.js';
 import { initPano } from './panorama.js';
 import { hoverSys, initImpianti, updSysSprites } from './impianti.js';
 import { initPwa } from './pwa.js';
@@ -47,10 +49,11 @@ async function loadPlan(){
 }
 
 /* ------------------------- Puntatore: passeggiata o editor ------------------------- */
-canvas.addEventListener('pointerdown', e => { if (st.mode === 'walk') walkPointerDown(e); else editorDown(e); });
-canvas.addEventListener('pointermove', e => { hoverSys(e); if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
-canvas.addEventListener('pointerup', e => { walkPointerUp(); editorUp(e, false); });
-canvas.addEventListener('pointercancel', e => { walkPointerUp(); editorUp(e, true); });
+/* finché la piantina non è caricata il puntatore non fa nulla (prima un mouse fermo sulla scena dava errore) */
+canvas.addEventListener('pointerdown', e => { if (!st.plan) return; if (st.mode === 'walk') walkPointerDown(e); else editorDown(e); });
+canvas.addEventListener('pointermove', e => { if (!st.plan) return; hoverSys(e); if (st.mode === 'walk') walkPointerMove(e); else editorMove(e); });
+canvas.addEventListener('pointerup', e => { if (!st.plan) return; walkPointerUp(); editorUp(e, false); });
+canvas.addEventListener('pointercancel', e => { if (!st.plan) return; walkPointerUp(); editorUp(e, true); });
 
 /* ------------------------- Ciclo di render ------------------------- */
 
@@ -86,6 +89,8 @@ function frame(time){
   roofFrame();
   measFrame();
   namesFrame();
+  sunFrame();
+  casaFrame();
   vtoolsEl.hidden = st.editing;
   /* Disegno solo se qualcosa è cambiato: a scena ferma la scheda video riposa e l’immagine resta identica */
   const moved = cameraMoved();

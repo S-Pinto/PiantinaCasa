@@ -34,6 +34,7 @@ const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
 const hints = {
   orbit:'Trascina per ruotare, rotella o pizzico per zoomare.',
   plan:'Vista dall’alto, con Via Verona in basso. Rotella o pizzico per zoomare.',
+  planTall:'Vista dall’alto, girata per lo schermo in verticale: Via Verona è a destra. Pizzico per zoomare.',
   walk: coarse ? 'Joystick per muoverti, trascina per guardare. Tocca la mappa per spostarti.'
                : 'Clicca la scena per guardare col mouse (Esc per liberarlo), muoviti con W A S D, Maiusc per correre. Clicca la mappa per spostarti.',
   edit: coarse ? 'Tocca un elemento per modificarlo, oppure scegli uno strumento. Due dita per spostare e zoomare.'
@@ -57,6 +58,8 @@ function insets(){
   if (tb && tb.offsetWidth) r.t = Math.max(r.t, tb.getBoundingClientRect().bottom - canvas.getBoundingClientRect().top + 8);
   if (st.editing){
     const lv = box('levels'); if (lv) r.t = Math.max(r.t, lv.b + 8);
+    /* sul telefono il suggerimento del livello resta in alto per tutta la modifica: la casa va sotto di lui */
+    const hn = box('hint'); if (hn && hn.w > w * .6){ if (hn.t < h / 2) r.t = Math.max(r.t, hn.b + 6); else r.b = Math.max(r.b, h - hn.t + 6); }
     const dk = box('dock');
     if (dk){ if (dk.h > dk.w) r.l = Math.max(r.l, dk.r + 8); else r.b = Math.max(r.b, h - dk.t + 8); }
   } else {
@@ -89,7 +92,7 @@ function fitShot(dir, fov, top){
   /* sx e sy: di quanto il centro della casa deve scostarsi dal centro della parte libera, in proporzione */
   let sx = 0, sy = 0;
   const ok = D => {
-    fitCam.position.copy(dir).multiplyScalar(D).add(c); fitCam.up.set(0, 1, 0); if (top) fitCam.up.set(0, 0, -1);
+    fitCam.position.copy(dir).multiplyScalar(D).add(c); fitCam.up.set(0, 1, 0); if (top) fitCam.up.set(-dir.x, 0, -dir.z).normalize();
     fitCam.lookAt(c); fitCam.updateMatrixWorld();
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
     for (const p of pts){ fitV.copy(p).project(fitCam); if (fitV.z > 1) return false;
@@ -108,8 +111,11 @@ function fitShot(dir, fov, top){
   const tgt = c.clone().add(shift);
   return { pos:fitCam.position.clone().add(shift), tgt, fov, dist:D };
 }
+/* Pianta su uno schermo in verticale (telefono): la casa è lunga e stretta, quindi la giro di 90°
+   con Via Verona a destra; così occupa quasi il doppio dello schermo. */
+const planTall = () => aspect() < .8;
 function preset(m){
-  if (m === 'plan') return fitShot(new THREE.Vector3(0, 1, 0.0004).normalize(), PLAN_FOV, true);
+  if (m === 'plan') return fitShot(planTall() ? new THREE.Vector3(-0.0004, 1, 0).normalize() : new THREE.Vector3(0, 1, 0.0004).normalize(), PLAN_FOV, true);
   /* in verticale la casa (lunga e stretta) è limitata dalla larghezza: guardo più dall’alto, così guadagna profondità */
   const a = aspect(), turn = THREE.MathUtils.clamp((1.15 - a) / .55, 0, 1);
   const el = (40 + turn * 16) * Math.PI / 180;
@@ -118,7 +124,7 @@ function preset(m){
 }
 function applyLook(){ camera.rotation.set(st.pitch, st.yaw, 0, 'YXZ'); }
 function setHint(){
-  let t = hints[st.mode];
+  let t = hints[st.mode === 'plan' && planTall() ? 'planTall' : st.mode];
   if (st.editing) t = st.tool !== 'select' ? TIPS[st.tool] : (st.sel ? '' : (LEVEL_TIPS[st.level] || hints.edit));
   if (st.cmpId) t = '';
   hintEl.textContent = t || ''; hintEl.hidden = !t;
@@ -160,8 +166,18 @@ function setMode(m){
 }
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
-function updateLow(){ st.lowTarget = ($('optLow').checked || st.editing) ? 0.07 : 1; }
+/* Pareti basse: dal menu, oppure in modifica se lo scegli (pulsante Muri alti/bassi, ricordato sul dispositivo).
+   Arredi: nascosti da soli quando modifichi i muri, a meno che non li riaccendi dal pulsante Arredi. */
+const EDIT_LOW_KEY = 'piantina-muri-in-modifica';
+try { st.editLow = localStorage.getItem(EDIT_LOW_KEY) !== 'alti'; } catch(_){ st.editLow = true; }
+function updateLow(){
+  st.lowTarget = ($('optLow').checked || (st.editing && st.editLow)) ? 0.07 : 1;
+  const hideFurn = st.editing && st.level === 'pareti' && !st.wallFurn;
+  MAING.u.visible = st.showFurn && !hideFurn;
+  st.redraw = Math.max(st.redraw || 0, 4); st.shadowDirty = true;
+}
+function setEditLow(on){ st.editLow = on; try { localStorage.setItem(EDIT_LOW_KEY, on ? 'bassi' : 'alti'); } catch(_){} updateLow(); }
 $('optLow').addEventListener('change', updateLow);
-$('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; MAING.u.visible = st.showFurn; });
+$('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; updateLow(); });
 
-export { applyLook, controls, hintEl, initTheme, preset, setHint, setMode, updateLow };
+export { applyLook, controls, hintEl, initTheme, preset, setEditLow, setHint, setMode, updateLow };
