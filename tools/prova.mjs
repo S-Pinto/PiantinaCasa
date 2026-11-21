@@ -42,6 +42,8 @@ async function newPage(opts, label){
   /* grafica leggera: senza scheda video la prova è lenta */
   await ctx.addInitScript(() => { try { localStorage.setItem('piantina-ambiente', JSON.stringify({ quality:'bassa', v:2 })); } catch(e){} });
   const page = await ctx.newPage();
+  /* sui server di GitHub (pochi processori, grafica simulata) foto e clic possono superare i 30 secondi predefiniti */
+  page.setDefaultTimeout(90000);
   page.on('pageerror', e => problems.push(label + ': errore nella pagina: ' + e.message + ' (' + (e.stack || '').split('\n').slice(1, 3).map(x => x.trim()).join(' ') + ')'));
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) problems.push(label + ': ' + m.text()); });
   return { ctx, page };
@@ -79,7 +81,7 @@ async function bundleCheck(){
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout:120000 }), click(page, '#dlfile')]);
   const html = fs.readFileSync(await dl.path(), 'utf8');
   fs.writeFileSync(path.join(OUT, 'piantina-via-verona.html'), html);
-  const p2 = await ctx.newPage(); const errs = [];
+  const p2 = await ctx.newPage(); p2.setDefaultTimeout(90000); const errs = [];
   p2.on('pageerror', e => errs.push(e.message));
   /* come un file aperto dal disco: c'è solo la pagina, ogni altro indirizzo locale non esiste */
   await ctx.route(/^http:\/\/file\.test\//, r => new URL(r.request().url()).pathname === '/' ? r.fulfill({ body:html, contentType:'text/html' }) : r.fulfill({ status:404, body:'' }));
