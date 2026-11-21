@@ -2,17 +2,18 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { WELL, X, Z, st } from './core.js';
 import { labelsG, scene } from './scene.js';
-import { holedPlane, holedSlab, plate, road } from './build.js';
+import { holedPlane, holedSlab, labelTexture, plate, road } from './build.js';
 import { mergeStatic } from './prestazioni.js';
 import { ambState } from './ambiente.js';
 import { plantTrees, seedRng } from './verde.js';
 
 /* Il palazzo e il quartiere attorno, ricostruiti dalle viste di Google Earth (Brindisi):
-   l’attico è l’unico appartamento al 7° piano, al centro di una lunga stecca bianca con balconi
-   continui verso Via Verona; ai lati dell’attico solo il tetto piano a quadrotti con i volumi
-   tecnici. Davanti la strada larga con il marciapiede rialzato e il muretto, a est l’incrocio
-   con l’asilo dal tetto rosso, a ovest il capannone con i pannelli solari, a sud palazzi ocra,
-   rosa e verde acqua. Volumi semplici, senza ombre del sole: servono a dare l’altezza e l’intorno. */
+   l’attico è l’unico appartamento al 7° piano, al centro di una lunga stecca con balconi
+   continui verso Via Mantova; ai lati dell’attico solo il tetto piano a quadrotti con i volumi
+   tecnici. Le strade come nelle mappe di Mone: davanti ai balconi Via Mantova, che a ovest gira
+   verso nord (Via Appia) lungo il Lidl e a est sbocca nell’incrocio di Via Verona (a est, da
+   nord-ovest a sud-est, con il cancello d’ingresso), Via Montebello (verso sud-ovest) e Via Magenta.
+   Fra il palazzo e Via Verona l’asilo dal tetto rosso; oltre Via Montebello palazzi ocra, rosa e verde acqua. Volumi semplici, senza ombre del sole: servono a dare l’altezza e l’intorno. */
 
 const FLOOR_H = 3, STOREYS = 7;
 const GROUND_Y = -FLOOR_H * STOREYS - 0.3;
@@ -378,7 +379,7 @@ function placeLamps(list){
 }
 
 /* ---------- garage al piano -1 ----------
-   Il palazzo ha i garage un piano sotto la strada: lungo Via Verona e sui due fianchi una corsia scende a −3 m,
+   Il palazzo ha i garage un piano sotto la strada: lungo Via Mantova e sui due fianchi una corsia scende a −3 m,
    con le porte basculanti nel muro del palazzo; verso la strada un muretto con la ringhiera bianca.
    A ovest, dietro il palazzo, la rampa risale al livello della strada. */
 const GARAGE_D = 3, GL = 3.2;            /* profondità e larghezza della corsia (oltre la loggia di 1,3 m) */
@@ -413,8 +414,8 @@ function garages(xW, xE, north, south, pz, walkMat){
     m.position.set((xa + xb) / 2, yb + GARAGE_D / 2, (za + zb) / 2); m.rotation.y = -Math.atan2(zb - za, xb - xa);
     ctxG.add(m);
   };
-  doorWall(xW, zf + 0.02, xE, zf + 0.02);                                     /* sotto i balconi su Via Verona */
-  doorWall(xW - 0.02, north, xW - 0.02, zf);                                  /* fianco ovest (Via Mantova): la faccia guarda a ovest */
+  doorWall(xW, zf + 0.02, xE, zf + 0.02);                                     /* sotto i balconi su Via Mantova */
+  doorWall(xW - 0.02, north, xW - 0.02, zf);                                  /* fianco ovest (Via Mantova che gira a nord): la faccia guarda a ovest */
   doorWall(xE + 0.02, zf, xE + 0.02, pz + 2);                                 /* fianco est */
   /* fondo della corsia e rampa che risale dietro il palazzo */
   plainBox(xW - GL, xE + GL, zf, zo, yb - 0.1, yb, floor);
@@ -435,15 +436,36 @@ function garages(xW, xE, north, south, pz, walkMat){
   railing(xE + GL + 0.12, pz + 2, xE + GL + 0.12, zo, GROUND_Y + 0.45, 1.2);
   railing(xE, pz + 1.88, xE + GL, pz + 1.88, GROUND_Y + 0.45, 1.2);
   /* marciapiedi lungo la ringhiera */
-  plainBox(xW - 12, xE + 40, zo + 0.25, zo + 1.8, GROUND_Y, GROUND_Y + 0.12, walkMat);
+  plainBox(xW - 12, xE + 12, zo + 0.25, zo + 1.8, GROUND_Y, GROUND_Y + 0.12, walkMat);
   plainBox(xW - GL - 2.3, xW - GL - 0.25, north - 30, zo + 0.25, GROUND_Y, GROUND_Y + 0.12, walkMat);
+}
+
+/* cancello del palazzo: due pilastri e un’anta scorrevole a sbarre, largo 4 m */
+const gateMat = new THREE.MeshStandardMaterial({ color:'#3c4146', roughness:.6, metalness:.5 });
+function gate(cx, cz, rot){
+  const g = new THREE.Group(); g.position.set(cx, GROUND_Y, cz); g.rotation.y = rot;
+  const pil = new THREE.BoxGeometry(0.45, 2.3, 0.45);
+  [-2.25, 2.25].forEach(x => { const m = new THREE.Mesh(pil, whiteMat); m.position.set(x, 1.15, 0); g.add(m); });
+  const bar = new THREE.BoxGeometry(0.04, 1.8, 0.04);
+  for (let i = 0; i < 26; i++){ const m = new THREE.Mesh(bar, gateMat); m.position.set(-1.95 + i * 0.156, 1.05, 0); g.add(m); }
+  [0.2, 1.9].forEach(y => { const m = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.08, 0.06), gateMat); m.position.set(0, y, 0); g.add(m); });
+  ctxG.add(g);
+}
+/* nome di una via (o di un cancello) scritto per terra, come quelli della piantina */
+function streetName(text, x, z, rot, k){
+  const w = 18 * (k || 1);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.25),
+    new THREE.MeshBasicMaterial({ map:labelTexture(text, 'rgba(244,246,248,.9)'), transparent:true, depthWrite:false }));
+  m.rotation.set(-Math.PI / 2, 0, rot || 0); m.position.set(x, GROUND_Y + 0.08, z); m.renderOrder = 2;
+  ctxG.add(m);
 }
 
 function buildContext(){
   /* piantina: x 62–675 px, y 38–352 px (balcone a sud fino a 352) */
   const west = X(62), east = X(675), north = Z(97), south = Z(352), mid = Z(300);
-  const xW = west - 34, xE = east + 34;
-  /* la stecca: 7 piani sotto l’attico, balconi continui su Via Verona */
+  /* la stecca è lunga circa 73 m (Google Earth): finisce prima dell’asilo e della curva di Via Mantova */
+  const xW = west - 24, xE = east + 24;
+  /* la stecca: 7 piani sotto l’attico, balconi continui su Via Mantova */
   const gap = [X(WELL.x0) - 0.1, X(WELL.x1) + 0.1];
   /* sul retro la facciata segue la casa (Google Earth): a filo sotto la veranda della cucina,
      rientra davanti alla stanza a ovest della veranda, poi torna avanti */
@@ -471,7 +493,7 @@ function buildContext(){
   plainBox(wx1 - 0.25, wx1, wjz, north, -0.04, 0.9, whiteMat);
   roofBox(wx1 - 3.5, north - 24, 5, 4, -0.04);
   /* corpi scala che sporgono sulla facciata dei balconi */
-  [xW + 12, -32, 30, xE - 12].forEach(cx => {
+  [-31, 30].forEach(cx => {
     const t = facadeMat('cwin', 4, -0.42 - GROUND_Y + GARAGE_D);
     /* arriva fino al fondo dei balconi incassati e scende fino al piano dei garage */
     const sb = new THREE.Mesh(new THREE.BoxGeometry(4, -0.42 - GROUND_Y + 2.4 + GARAGE_D, 2.7), [casaMat, casaMat, casaMat, casaMat, t, casaMat]);
@@ -522,34 +544,54 @@ function buildContext(){
   const roadMat = len => { const t = asphalt.clone(); t.needsUpdate = true; t.repeat.set(len / 40, 1); return new THREE.MeshStandardMaterial({ map:t, roughness:.85 }); };
   const walkMat = new THREE.MeshStandardMaterial({ color:'#c9c5bc', roughness:.95 });
   const green = new THREE.MeshStandardMaterial({ color:'#6f8456', roughness:1 });
-  /* Via Verona. Fra la strada e il palazzo, sotto la ringhiera, corre la corsia dei garage un piano più in basso (foto da Via Mantova) */
+  /* Via Mantova davanti ai balconi. Fra la strada e il palazzo, sotto la ringhiera, corre la corsia dei garage
+     un piano più in basso (foto da Via Mantova). A ovest Via Mantova gira verso nord, a est finisce nell’incrocio. */
   const roadZ = south + 12;
-  strip(0, roadZ, 600, 14, 0, roadMat(600));
+  const sideX = xW - GL - 7;                 /* Via Mantova, tratto verso nord (lungo il Lidl, fino a Via Appia) */
+  const crossX = xE + 18;                    /* Via Verona, a est, da nord-ovest a sud-est */
+  const MB = [-0.91, 0.415];                 /* Via Montebello: dall’incrocio verso sud-ovest */
+  strip((sideX - 4.5 + crossX) / 2, roadZ, crossX - sideX + 4.5, 14, 0, roadMat(crossX - sideX));
   garages(xW, xE, north, south, pz, walkMat);
-  strip(0, roadZ + 8.6, 600, 3.2, 0, walkMat, 0.12);
-  /* incrocio a est con le strisce, strada laterale a ovest */
-  const crossX = xE + 26;
+  /* marciapiede di fronte: fino a dove Via Montebello si stacca verso sud-ovest */
+  const swE = crossX - 30;
+  strip((sideX + 4.5 + swE) / 2, roadZ + 8.6, swE - sideX - 4.5, 3.2, 0, walkMat, 0.12);
+  strip(sideX, (roadZ + 7 - 140) / 2, roadZ + 7 + 140, 9, Math.PI/2, roadMat(150));
+  /* Via Verona a nord dell’incrocio, Via Magenta a sud, sulla stessa linea */
   strip(crossX, -60, 260, 11, Math.PI/2, roadMat(260));
+  /* Via Montebello in diagonale: dall’incrocio verso sud-ovest (e un tratto verso nord-est) */
+  {
+    const mbA = Math.atan2(MB[1], -MB[0]);
+    strip(crossX + MB[0] * 80, roadZ + MB[1] * 80, 240, 10, mbA, roadMat(240), 0.035);
+  }
   const zebra = new THREE.MeshStandardMaterial({ color:'#efeee9', roughness:.8 });
-  for (let i = -5; i <= 5; i++) strip(crossX + i * 0.95, roadZ, 0.5, 12, 0, zebra, 0.05);
-  for (let i = -6; i <= 6; i++) strip(crossX, roadZ - 9.5 + i * 0.95, 9, 0.5, 0, zebra, 0.05);
-  const sideX = xW - 14;
-  strip(sideX, -50, 140, 9, Math.PI/2, roadMat(140));
-  /* l’asilo dal tetto rosso fra il palazzo e l’incrocio, con il suo giardino */
-  plainBox(xE + 4, xE + 18, south - 12, south - 1, GROUND_Y, GROUND_Y + 3.6, new THREE.MeshStandardMaterial({ color:'#e8d9c8', roughness:.9 }));
-  const redRoof = new THREE.Mesh(new THREE.ConeGeometry(9.2, 2.2, 4, 1), new THREE.MeshStandardMaterial({ color:'#b0523c', roughness:.8 }));
-  redRoof.rotation.y = Math.PI / 4; redRoof.scale.set(1.05, 1, 0.8);
-  redRoof.position.set(xE + 11, GROUND_Y + 4.7, south - 6.5); ctxG.add(redRoof);
-  strip(xE + 11, north - 6, 14, 12, 0, green, 0.05);
-  /* a ovest il grande capannone con i pannelli solari e il parcheggio */
-  block(sideX - 80, sideX - 8, north - 18, south + 2, GROUND_Y, GROUND_Y + 9, { south:false, solar:true, tint:'#f2f2f0' });
+  for (let i = -5; i <= 5; i++) strip(crossX + i * 0.95, roadZ - 12, 0.5, 4, 0, zebra, 0.05);
+  for (let i = -6; i <= 6; i++) strip(crossX - 11, roadZ + i * 0.95, 4, 0.5, 0, zebra, 0.05);
+  /* i due cancelli del palazzo: l’ingresso su Via Verona e il secondo su Via Mantova, verso Via Appia */
+  gate(crossX - 7.2, -20, Math.PI / 2);
+  strip((xE + crossX - 7.2) / 2, -20, crossX - 7.2 - xE, 3, 0, walkMat, 0.06);      /* vialetto dal cancello al retro del palazzo */
+  gate(sideX + 6.2, -54, Math.PI / 2);
+  /* nomi delle vie sull’asfalto (Via Mantova davanti ai balconi è il nome della piantina) */
+  streetName('Via Mantova', sideX, -30, Math.PI / 2);
+  streetName('Via Verona', crossX, -45, Math.PI / 2);
+  streetName('Via Magenta', crossX, roadZ + 40, Math.PI / 2);
+  streetName('Via Montebello', crossX + MB[0] * 55, roadZ + MB[1] * 55, Math.atan2(MB[1], -MB[0]));
+  streetName('Cancello ingresso', crossX - 13, -23.5, 0, 0.5);
+  streetName('Cancello 2', sideX + 10, -54, 0, 0.5);
+  /* l’asilo dal tetto rosso fra il palazzo e Via Verona, con il suo giardino */
+  plainBox(xE + 2, xE + 11, south - 12, south - 1, GROUND_Y, GROUND_Y + 3.6, new THREE.MeshStandardMaterial({ color:'#e8d9c8', roughness:.9 }));
+  const redRoof = new THREE.Mesh(new THREE.ConeGeometry(7.4, 2.2, 4, 1), new THREE.MeshStandardMaterial({ color:'#b0523c', roughness:.8 }));
+  redRoof.rotation.y = Math.PI / 4; redRoof.scale.set(0.9, 1, 1.1);
+  redRoof.position.set(xE + 6.5, GROUND_Y + 4.7, south - 6.5); ctxG.add(redRoof);
+  strip(xE + 6.5, north - 6, 9, 12, 0, green, 0.05);
+  /* a ovest, oltre Via Mantova, il Lidl con i pannelli solari e il suo parcheggio */
+  block(sideX - 36, sideX - 8, north - 46, south - 4, GROUND_Y, GROUND_Y + 9, { south:false, solar:true, tint:'#f2f2f0' });
   const park = new THREE.MeshStandardMaterial({ color:'#8e8c87', roughness:.9 });
   strip(sideX - 44, south + 7, 70, 7, 0, park, 0.04);
   /* oltre la strada: zona tecnica ribassata, una cabina, i palazzi ocra, rosa e verde acqua */
   plainBox(-48, 6, roadZ + 10.5, roadZ + 26, GROUND_Y - 0.02, GROUND_Y + 0.02, new THREE.MeshStandardMaterial({ color:'#9a978f', roughness:1 }));
   plainBox(-48, 6, roadZ + 10.2, roadZ + 10.6, GROUND_Y, GROUND_Y + 1.2, whiteMat);
   plainBox(-14, 2, roadZ + 13, roadZ + 21, GROUND_Y, GROUND_Y + 3.4, new THREE.MeshStandardMaterial({ color:'#d8d4ce', roughness:.9 }));
-  block(-46, -6, roadZ + 30, roadZ + 44, GROUND_Y, GROUND_Y + 22, { tint:'#e6c88f', boxes:[[-38, roadZ + 37], [-16, roadZ + 37]], shops:1 });
+  block(-46, -16, roadZ + 56, roadZ + 70, GROUND_Y, GROUND_Y + 22, { tint:'#e6c88f', boxes:[[-38, roadZ + 63], [-24, roadZ + 63]], shops:1 });
   block(10, 30, roadZ + 26, roadZ + 58, GROUND_Y, GROUND_Y + 24, { tint:'#d79a86', boxes:[[20, roadZ + 40]], shops:1 });
   block(38, 50, roadZ + 12, roadZ + 26, GROUND_Y, GROUND_Y + 24, { tint:'#b9cfc8', boxes:[[44, roadZ + 19, 4, 4]], shops:1 });
   block(-110, -60, roadZ + 14, roadZ + 40, GROUND_Y, GROUND_Y + 8, { south:false, tint:'#c9c4bc' });
@@ -562,37 +604,37 @@ function buildContext(){
   /* il verde (verde.js): pini a ombrello, palme, lecci e ficus, cipressi e siepi di oleandro */
   const R = seedRng(2026), T = [];
   const add = (k, x, z, s, y) => T.push({ k, x, z, s, y });
-  for (let z = -140; z < 30; z += 9) add('palma', crossX + 8.2, z + R() * 2, 0.9 + R() * 0.25);          /* viale di palme oltre l’incrocio */
+  for (let z = -140; z < roadZ - 10; z += 9) add('palma', crossX + 8.2, z + R() * 2, 0.9 + R() * 0.25);   /* palme lungo Via Verona */
   for (let i = 0; i < 12; i++) add(R() < .7 ? 'pino' : 'leccio', crossX + 16 + R() * 28, south + 8 + R() * 28);
   for (let i = 0; i < 10; i++) add('siepe', crossX + 14 + R() * 30, south + 6 + R() * 30, 1 + R() * .5);
   for (let i = 0; i < 12; i++){ const r = R(); add(r < .45 ? 'pino' : r < .75 ? 'leccio' : 'cipresso', -30 + R() * 26, north - 14 - R() * 20); }
   for (let x = xW; x < xE; x += 13) if (x < wx0 - 4 || x > wjx + 3) add(R() < .5 ? 'leccio' : 'ficus', x + R() * 4, north - 6 - R() * 3);   /* dietro il palazzo, non dentro l’ala */
-  /* Via Verona: alberi sul marciapiede di fronte e oleandri nelle fioriere lungo il muretto */
-  for (let x = -120; x < 120; x += 11) if (Math.abs(x - crossX) > 9 && Math.abs(x - sideX) > 7) add('ficus', x + R() * 2, roadZ + 8.6, 0.75 + R() * .2);
-  for (let x = xW - 8; x < xE + 18; x += 4.5) if (Math.abs(x - crossX) > 9) add('siepe', x, south + GL + 0.9, 0.55 + R() * .15, GROUND_Y + 0.45);   /* fioriere oltre la ringhiera */
+  /* Via Mantova: alberi sul marciapiede di fronte e oleandri nelle fioriere lungo il muretto */
+  for (let x = sideX + 8; x < swE; x += 11) add('ficus', x + R() * 2, roadZ + 8.6, 0.75 + R() * .2);
+  for (let x = xW - 3; x < xE + 3; x += 4.5) add('siepe', x, south + GL + 0.9, 0.55 + R() * .15, GROUND_Y + 0.45);   /* fioriere oltre la ringhiera */
   /* il giardino dell’asilo */
-  add('palma', xE + 6, south - 0.5, 1.05); add('palma', xE + 17, north - 1.5, 0.95); add('ficus', xE + 10, north - 8);
-  for (let i = 0; i < 6; i++) add('siepe', xE + 5 + R() * 12, north - 11 + R() * 8);
+  add('palma', xE + 3, south - 0.5, 1.05); add('palma', xE + 10, north - 1.5, 0.95); add('ficus', xE + 6, north - 8);
+  for (let i = 0; i < 6; i++) add('siepe', xE + 3 + R() * 7, north - 11 + R() * 8);
   /* lungo il parcheggio a ovest e oltre la strada */
   for (let x = sideX - 76; x < sideX - 10; x += 10) add('leccio', x + R() * 2, south + 11.5, .8 + R() * .2);
   add('pino', -52, roadZ + 22, 1.1); add('pino', -58, roadZ + 30, 1.0); add('cipresso', -54, roadZ + 13); add('cipresso', -50, roadZ + 13);
   for (let i = 0; i < 6; i++) add(R() < .5 ? 'pino' : 'palma', -100 + R() * 40, roadZ + 44 + R() * 12);
   plantTrees(ctxG, T, GROUND_Y);
 
-  /* auto parcheggiate lungo Via Verona e le strade laterali, nel parcheggio a ovest */
+  /* auto parcheggiate lungo Via Mantova, Via Verona e nel parcheggio del Lidl */
   const cars = [];
-  for (let x = -140; x < 140; x += 5.4){
-    if (Math.abs(x - crossX) < 10 || Math.abs(x - sideX) < 8) continue;
+  for (let x = sideX + 9; x < crossX - 10; x += 5.4){
     if (R() < .72) cars.push([x + R() * .6, roadZ - 5.6, 0]);
-    if (R() < .6) cars.push([x + 2 + R() * .6, roadZ + 5.6, Math.PI]);
+    if (x < swE - 4 && R() < .6) cars.push([x + 2 + R() * .6, roadZ + 5.6, Math.PI]);
   }
-  for (let z = -110; z < south - 2; z += 5.4){ if (R() < .55) cars.push([crossX - 4.4, z, Math.PI / 2]); if (R() < .4) cars.push([sideX + 3.4, z, -Math.PI / 2]); }
+  for (let z = -110; z < south - 2; z += 5.4){ if (z < -26 || z > -14){ if (R() < .55) cars.push([crossX - 4.4, z, Math.PI / 2]); } if (R() < .4) cars.push([sideX + 3.4, z, -Math.PI / 2]); }
   for (let x = sideX - 76; x < sideX - 12; x += 2.6) if (R() < .7) cars.push([x, south + 7, R() < .5 ? Math.PI / 2 : -Math.PI / 2]);
   placeCars(cars, R);
 
   /* lampioni su entrambi i lati, che la sera si accendono e fanno una pozza di luce sull’asfalto */
   const lamps = [];
-  for (let x = -130; x < 130; x += 24){ lamps.push([x, roadZ - 7.4, 0]); lamps.push([x + 12, roadZ + 7.6, Math.PI]); }
+  for (let x = sideX + 10; x < crossX - 8; x += 24){ lamps.push([x, roadZ - 7.4, 0]); if (x + 12 < swE) lamps.push([x + 12, roadZ + 7.6, Math.PI]); }
+  for (let z = -100; z < roadZ - 10; z += 26) lamps.push([sideX - 5.6, z, Math.PI / 2]);
   for (let z = -120; z < south; z += 26) lamps.push([crossX + 6.2, z, -Math.PI / 2]);
   placeLamps(lamps);
 }
