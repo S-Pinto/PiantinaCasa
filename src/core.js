@@ -43,7 +43,7 @@ const st = {
   plan: null,            // la piantina in uso (vedi model.js)
   mode: 'orbit',         // 'orbit' | 'plan' | 'walk'
   editing: false,
-  tool: 'select', sel: null, drag: null, draft: null, finishSide: 'both',
+  tool: 'select', sel: null, stack: null, drag: null, draft: null, finishSide: 'both',
   needRebuild: false, overlayDirty: false,
   cmpId: null,           // versione mostrata nel confronto affiancato
   tween: null,           // animazione della camera

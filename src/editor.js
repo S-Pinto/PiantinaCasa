@@ -6,7 +6,7 @@ import { FURN } from './furniture.js';
 import { isH, normalize, uid, wallT } from './model.js';
 import { labelWpx, rebuild } from './build.js';
 import { controls, hintEl, setHint, setMode, updateLow } from './views.js';
-import { refreshProps } from './props.js';
+import { narrowUI, refreshProps } from './props.js';
 import { setCompare } from './variants.js';
 import { scheduleSave } from './storage.js';
 import { RUNK, SYS, fmtM, layerOn, placeSys, runKind, runLen, setLayer, sysHit, sysType, wallSnap } from './impianti.js';
@@ -261,6 +261,24 @@ function setSel(h){
 }
 function validateSel(){ if (st.sel && !selItem()) st.sel = null; }
 
+/* Arredi sotto il dito, dal primo da scegliere all'ultimo. Prima i mobili grandi (pergola, tappeti, letti...)
+   di cui tocchi il bordo, poi dal più piccolo al più grande: così il tavolo sotto la pergola si prende toccandolo,
+   la pergola toccandone il telaio, e toccando di nuovo nello stesso punto si passa a quello sotto. */
+const BIG_PX = 1.6 / (S*S);                        // oltre 1,6 m² un arredo si sceglie anche dal bordo
+function furnAt(px, py, tol){
+  const out = [];
+  st.plan.furniture.forEach((f, i) => {
+    const th = f.rot * Math.PI / 180, dx = px - f.x, dy = py - f.y;
+    const lx = dx * Math.cos(th) + dy * Math.sin(th), ly = -dx * Math.sin(th) + dy * Math.cos(th);
+    const hw = f.w / S / 2, hd = f.d / S / 2;
+    if (Math.abs(lx) > hw + tol*.3 || Math.abs(ly) > hd + tol*.3) return;
+    const edge = Math.min(hw - Math.abs(lx), hd - Math.abs(ly)) <= tol*.7 && 4*hw*hd >= BIG_PX;
+    out.push({ id:f.id, edge:edge, area:hw*hd, i:i });
+  });
+  out.sort((a, b) => (b.edge - a.edge) || (a.area - b.area) || (b.i - a.i));
+  return out.map(o => o.id);
+}
+
 /* Elemento sotto il puntatore. Con allowed = elenco di tipi guarda solo quelli (il livello attivo). */
 function hitTest(px, py, allowed){
   const tol = tolPx(), ok = t => !allowed || allowed.indexOf(t) >= 0;
@@ -274,11 +292,7 @@ function hitTest(px, py, allowed){
   }
   if (ok('column')) for (const c of st.plan.columns)
     if (px >= c.x0 - tol*.4 && px <= c.x1 + tol*.4 && py >= c.y0 - tol*.4 && py <= c.y1 + tol*.4) return { type:'column', id:c.id };
-  if (ok('furn')) for (let i = st.plan.furniture.length - 1; i >= 0; i--){
-    const f = st.plan.furniture[i], th = f.rot * Math.PI / 180, dx = px - f.x, dy = py - f.y;
-    const lx = dx * Math.cos(th) + dy * Math.sin(th), ly = -dx * Math.sin(th) + dy * Math.cos(th);
-    if (Math.abs(lx) <= f.w / S / 2 + tol*.3 && Math.abs(ly) <= f.d / S / 2 + tol*.3) return { type:'furn', id:f.id };
-  }
+  if (ok('furn')){ const fs = furnAt(px, py, tol); if (fs.length) return { type:'furn', id:fs[0] }; }
   if (ok('label')) for (const l of st.plan.labels){
     const wp = labelWpx(l), hp = wp/4;
     if (Math.abs(px - l.x) <= wp/2 && Math.abs(py - l.y) <= hp/2) return { type:'label', id:l.id };
@@ -313,7 +327,8 @@ function getHandles(){
   }
   if (it.type === 'column'){ const c = it.obj; return [{ k:'tl', x:c.x0, y:c.y0 }, { k:'br', x:c.x1, y:c.y1 }]; }
   if (it.type === 'furn'){
-    const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + 7;
+    /* sul telefono (pianta vista da lontano) il cerchio per ruotare si allontana dall'arredo, così non si tocca per sbaglio */
+    const f = it.obj, th = f.rot * Math.PI / 180, off = f.d / S / 2 + Math.max(7, tolPx()*1.6);
     return [{ k:'rot', x:f.x - Math.sin(th) * off, y:f.y + Math.cos(th) * off }];
   }
   if (it.type === 'floor' || it.type === 'rail' || it.type === 'run') return it.obj.pts.map((p,i) => ({ k:i, x:p[0], y:p[1] }));
@@ -543,7 +558,9 @@ function editorDown(e){
   const before = JSON.stringify(st.plan), tol = tolPx();
 
   if (st.tool === 'select'){
+    const onSel = selItem() && selItem().type === 'furn' && furnAt(p[0], p[1], 0).indexOf(st.sel.id) >= 0;
     for (const h of getHandles()){
+      if (h.k === 'rot' && onSel) continue;             // toccando dentro l'arredo lo si sposta, non lo si ruota
       if (Math.hypot(h.x - p[0], h.y - p[1]) <= tol*1.3){
         const it = selItem();
         st.drag = { kind:'handle', h:h, before:before, start:p, cx:e.clientX, cy:e.clientY, armed:false, orig:clone(it.type === 'op' ? it.wall : it.obj),
@@ -552,7 +569,12 @@ function editorDown(e){
       }
     }
     const allowed = LEVELS[st.level].types;
-    const hit = hitTest(p[0], p[1], allowed);
+    let hit = hitTest(p[0], p[1], allowed), wasSel = false;
+    /* arredi uno sopra l'altro: se sotto il dito c'è quello già scelto, resta lui (si trascina la pergola anche
+       toccandola sopra il tavolo); un tocco senza trascinare passa a quello sotto */
+    const stack = (hit && hit.type === 'furn') ? furnAt(p[0], p[1], tol) : [];
+    if (stack.length > 1 && st.sel && st.sel.type === 'furn' && stack.indexOf(st.sel.id) >= 0){ hit = { type:'furn', id:st.sel.id }; wasSel = true; }
+    st.stack = stack.length > 1 ? stack : null;
     if (!hit){
       setSel(null);
       const other = hitTest(p[0], p[1], null);
@@ -561,12 +583,13 @@ function editorDown(e){
       return;
     }
     setSel(hit);
+    if (st.stack && !wasSel) flash('Qui ci sono ' + st.stack.length + ' arredi uno sopra l’altro: tocca di nuovo per scegliere quello sotto, o usa l’elenco nella scheda.', 3600);
     const it = selItem();
     const base = it.type === 'op' ? it.wall : it.obj;
     st.drag = { kind:'move', before:before, start:p, cx:e.clientX, cy:e.clientY, armed:false, orig:clone(base),
              g:guides(it.type === 'op' ? null : base.id),
              F:(it.type === 'furn' || it.type === 'op') ? obstacleFaces() : null,
-             attached:it.type === 'wall' ? attachedFor(it.obj) : [] };
+             attached:it.type === 'wall' ? attachedFor(it.obj) : [], wasSel:wasSel };
     return;
   }
   if (st.tool === 'wallE' || st.tool === 'wallI' || st.tool === 'rail' || st.tool === 'glazed' || st.tool === 'fence' || st.tool === 'run'){
@@ -593,7 +616,7 @@ function editorMove(e){
   /* un piccolo tremolio del clic non sposta niente: serve un vero trascinamento */
   if (st.drag.armed === false){
     if (Math.hypot(e.clientX - st.drag.cx, e.clientY - st.drag.cy) < DRAG_PX) return;
-    st.drag.armed = true;
+    st.drag.armed = true; document.body.dataset.dragging = '1';
   }
   const p = ground(e); if (!p) return;
   const tol = tolPx()*.8;
@@ -705,9 +728,11 @@ function editorMove(e){
 
 function editorUp(e, cancelled){
   pointers.delete(e.pointerId);
+  document.body.dataset.dragging = '0';
   if (!st.editing || !st.drag) return;
   if (cancelled){ cancelInteraction(true); return; }
   const d = st.drag; st.drag = null; snapLines.length = 0; readout('');
+  if (d.kind === 'move' && d.wasSel && !d.armed && st.stack){ pickInStack(1); return; }
   if (d.kind === 'draw') return finishDraw(d);
   if (d.kind === 'place'){ if (!d.moved) doPlace(d); return; }
   if (JSON.stringify(st.plan) !== d.before){
@@ -715,9 +740,50 @@ function editorUp(e, cancelled){
     pushUndo(d.before); rebuild(); st.needRebuild = false;
   }
   st.overlayDirty = true; refreshProps();
+  if (d.kind === 'move') revealSel();
+}
+
+/* Sul telefono la scheda in basso può coprire l'arredo scelto: sposto un poco la pianta perché resti in vista */
+const revV = new THREE.Vector3();
+function revealSel(){
+  if (!narrowUI()) return;
+  requestAnimationFrame(() => {
+    const it = selItem(), sh = $('sheet');
+    if (!it || it.type !== 'furn' || st.tween || st.drag || sh.hidden) return;
+    const f = it.obj, r = canvas.getBoundingClientRect();
+    const toScr = (x, y) => { revV.set((x - CX) * S, 0, (y - CY) * S).project(camera);
+      return [r.left + (revV.x + 1) / 2 * r.width, r.top + (1 - revV.y) / 2 * r.height]; };
+    const c = toScr(f.x, f.y), e = toScr(f.x + Math.max(f.w, f.d) / S / 2 + 6, f.y);
+    const rad = Math.min(Math.abs(e[0] - c[0]), r.height / 5);
+    const lv = $('levels'), top = (lv && !lv.hidden ? lv.getBoundingClientRect().bottom : r.top) + 8, bot = sh.getBoundingClientRect().top - 8;
+    if (bot - top < 80) return;
+    const ty = clamp(c[1], Math.min(top + rad, (top + bot) / 2), Math.max(bot - rad, (top + bot) / 2));
+    const tx = clamp(c[0], r.left + 8 + rad, r.right - 8 - rad);
+    if (Math.abs(ty - c[1]) < 2 && Math.abs(tx - c[0]) < 2) return;
+    const a = ground({ clientX:c[0], clientY:c[1] }), b = ground({ clientX:tx, clientY:ty });
+    if (!a || !b) return;
+    const dv = new THREE.Vector3((a[0] - b[0]) * S, 0, (a[1] - b[1]) * S);
+    st.tween = { fp:camera.position.clone(), tp:camera.position.clone().add(dv), ft:controls.target.clone(), tt:controls.target.clone().add(dv), t:0, dur:.35 };
+    st.redraw = Math.max(st.redraw || 0, 30);
+  });
+}
+
+/* passa all'arredo successivo fra quelli uno sopra l'altro nel punto toccato */
+function pickInStack(step){
+  const ids = (st.stack || []).filter(id => byId(st.plan.furniture, id));
+  if (ids.length < 2 || !st.sel) return;
+  const i = ids.indexOf(st.sel.id), j = ((i < 0 ? 0 : i + step) % ids.length + ids.length) % ids.length;
+  selectStacked(ids[j]);
+}
+function selectStacked(id){
+  const ids = (st.stack || []).filter(x => byId(st.plan.furniture, x)), f = byId(st.plan.furniture, id);
+  if (!f) return;
+  setSel({ type:'furn', id:id }); revealSel();
+  flash(FURN[f.type].n + ' (' + (ids.indexOf(id) + 1) + ' di ' + ids.length + '). Tocca di nuovo lo stesso punto per scegliere quello sotto.', 3200);
 }
 
 function cancelInteraction(restore){
+  document.body.dataset.dragging = '0';
   if (st.drag && restore && st.drag.before && JSON.stringify(st.plan) !== st.drag.before){
     st.plan = normalize(JSON.parse(st.drag.before)); st.needRebuild = true; validateSel(); refreshProps();
   }
@@ -861,4 +927,4 @@ function setEditing(on){
 }
 $('btnEdit').addEventListener('click', () => setEditing(!st.editing));
 
-export { GRID, LEVEL_TIPS, TIPS, buildDock, clearTxt, clearances, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, fmtLen, furnHalf, getHandles, ground, histBtns, mutate, obstacleFaces, opt, pushUndo, rightAngle, selItem, setEditing, setSel, snapLines, splitRail, tolPx, validateSel, wallGaps };
+export { GRID, LEVEL_TIPS, TIPS, buildDock, clearTxt, clearances, deleteSel, duplicateSel, editorDown, editorMove, editorUp, flash, fmtLen, furnHalf, getHandles, ground, histBtns, mutate, obstacleFaces, opt, pickInStack, pushUndo, revealSel, rightAngle, selItem, selectStacked, setEditing, setSel, snapLines, splitRail, tolPx, validateSel, wallGaps };
