@@ -23,23 +23,27 @@ scene.add(ctxG);
    Ogni texture copre 4 campate da 3,3 m per 2 piani da 3 m, così il disegno si ripete meno:
    finestre con il telaio, tapparelle abbassate a metà o tutte, qualche persiana verde, tende colorate.
    kind: 'balc' balcone disegnato (facciate sul retro), 'loggia' solo il fondo del balcone (davanti
-   ci sono soletta e parapetto veri), 'win' finestre semplici. */
+   ci sono soletta e parapetto veri), 'win' finestre semplici.
+   Con il prefisso 'c' (cwin, cloggia, cbalc) è il palazzo di casa, come nella foto da Via Mantova:
+   intonaco grigio tortora, fasce grigio scuro a ogni piano, tapparelle bianche, ringhiere di metallo. */
 const TB = 4, TF = 2, BAY = 3.3;
 function facadeTex(kind, seed){
+  const casa = kind[0] === 'c';
+  if (casa) kind = kind.slice(1);
   const R = seedRng(seed), cw = 256, ch = 232;
   const cv = document.createElement('canvas'); cv.width = cw * TB; cv.height = ch * TF;
   const g = cv.getContext('2d');
   const px = cw / BAY;
-  g.fillStyle = kind === 'win' ? '#eceae5' : '#d6d3cc'; g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = casa ? (kind === 'win' ? '#d9d2cc' : '#d2cbc5') : kind === 'win' ? '#eceae5' : '#d6d3cc'; g.fillRect(0, 0, cv.width, cv.height);
   const glass = (x, y, w, h) => {
     const gr = g.createLinearGradient(x, y, x + w, y + h);
     gr.addColorStop(0, '#8e9aa6'); gr.addColorStop(.55, '#b9c3cc'); gr.addColorStop(1, '#7f8b97');
     g.fillStyle = gr; g.fillRect(x, y, w, h);
-    if (R() < .3){ g.fillStyle = ['rgba(232,225,205,.75)','rgba(205,170,150,.6)','rgba(240,240,235,.8)'][Math.floor(R()*3)]; g.fillRect(x + 3, y + 3, w * (.25 + R() * .2), h - 6); }   /* tenda */
-    const r = R(), sh = r < .25 ? 0 : r < .55 ? .35 + R() * .3 : r < .8 ? 1 : .15;           /* tapparella abbassata */
+    if (!casa && R() < .3){ g.fillStyle = ['rgba(232,225,205,.75)','rgba(205,170,150,.6)','rgba(240,240,235,.8)'][Math.floor(R()*3)]; g.fillRect(x + 3, y + 3, w * (.25 + R() * .2), h - 6); }   /* tenda */
+    const r = R(), sh = casa ? (r < .15 ? .1 : r < .55 ? .3 + R() * .4 : 1) : r < .25 ? 0 : r < .55 ? .35 + R() * .3 : r < .8 ? 1 : .15;   /* tapparella abbassata */
     if (sh){
-      g.fillStyle = '#c9c1b2'; g.fillRect(x, y, w, h * sh);
-      g.fillStyle = 'rgba(90,80,64,.28)'; for (let yy = y + 3; yy < y + h * sh; yy += 4) g.fillRect(x, yy, w, 1);
+      g.fillStyle = casa ? '#f1efeb' : '#c9c1b2'; g.fillRect(x, y, w, h * sh);
+      g.fillStyle = casa ? 'rgba(120,116,110,.22)' : 'rgba(90,80,64,.28)'; for (let yy = y + 3; yy < y + h * sh; yy += 4) g.fillRect(x, yy, w, 1);
     }
     g.strokeStyle = '#f7f6f2'; g.lineWidth = 3; g.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);  /* telaio */
     g.fillStyle = 'rgba(60,66,72,.35)'; g.fillRect(x + w/2 - 1, y + h * sh, 2, h * (1 - sh));
@@ -56,17 +60,24 @@ function facadeTex(kind, seed){
       glass(ox + 2.1*px, oy + 0.3*px, 0.75*px, 1.25*px);
       if (kind === 'balc'){
         g.fillStyle = 'rgba(70,64,58,.22)'; g.fillRect(ox, oy + ch - 1.24*px, cw, 0.09*px);       /* ombra della soletta */
-        g.fillStyle = '#f4f2ee'; g.fillRect(ox, oy + ch - 1.15*px, cw, 0.95*px);                  /* parapetto */
-        g.fillStyle = '#dedad3'; g.fillRect(ox, oy + ch - 0.2*px, cw, 0.2*px);
+        if (casa){                                                                                    /* ringhiera e fascia della soletta */
+          g.fillStyle = '#a9aaad'; g.fillRect(ox, oy + ch - 1.15*px, cw, 4); g.fillRect(ox, oy + ch - 0.42*px, cw, 3);
+          for (let xx = ox + 3; xx < ox + cw; xx += 7) g.fillRect(xx, oy + ch - 1.15*px, 2, 0.75*px);
+          g.fillStyle = '#8f8d90'; g.fillRect(ox, oy + ch - 0.3*px, cw, 0.3*px);
+        } else {
+          g.fillStyle = '#f4f2ee'; g.fillRect(ox, oy + ch - 1.15*px, cw, 0.95*px);                  /* parapetto */
+          g.fillStyle = '#dedad3'; g.fillRect(ox, oy + ch - 0.2*px, cw, 0.2*px);
+        }
       } else {
         g.fillStyle = 'rgba(60,54,48,.25)'; g.fillRect(ox, oy, cw, 0.12*px);                       /* ombra della soletta sopra */
       }
     } else {
       const x = ox + 1.0*px, y = oy + 0.75*px, w = 1.2*px, h = 1.45*px;
-      if (R() < .22) persiane(x, y, w, h);
+      if (!casa && R() < .22) persiane(x, y, w, h);
       glass(x, y, w, h);
       g.fillStyle = '#d9d5ce'; g.fillRect(x - 0.1*px, y + h, w + 0.2*px, 5);                       /* davanzale */
       g.fillStyle = 'rgba(0,0,0,.05)'; g.fillRect(ox, oy + ch - 3, cw, 3);                           /* marcapiano */
+      if (casa){ g.fillStyle = '#8f8d90'; g.fillRect(ox, oy + ch - 0.32*px, cw, 0.32*px); }          /* fascia grigia all’altezza del solaio */
     }
   }
   for (let i = 0; i < 700; i++){ g.fillStyle = 'rgba(90,80,70,' + (R()*0.025) + ')'; g.fillRect(R()*cv.width, R()*cv.height, 2 + R()*10, 2 + R()*16); }
@@ -76,7 +87,8 @@ function facadeTex(kind, seed){
   t.userData.kind = kind;
   return t;
 }
-const TEX = { balc:[1, 2].map(i => facadeTex('balc', i)), loggia:[3, 4, 5].map(i => facadeTex('loggia', i)), win:[6, 7, 8].map(i => facadeTex('win', i)) };
+const TEX = { balc:[1, 2].map(i => facadeTex('balc', i)), loggia:[3, 4, 5].map(i => facadeTex('loggia', i)), win:[6, 7, 8].map(i => facadeTex('win', i)),
+  cbalc:[11].map(i => facadeTex('cbalc', i)), cloggia:[12, 13].map(i => facadeTex('cloggia', i)), cwin:[14, 15].map(i => facadeTex('cwin', i)) };
 /* finestre accese di sera: 16 campate × 8 piani a caso, così il disegno non si ripete a ogni campata */
 const LIT_COLS = 16, LIT_ROWS = 8;
 function litTex(balconies){
@@ -202,6 +214,27 @@ function roofClutter(x0, x1, z0, z1, y, seed){
   for (let i = 0, n = Math.round(area / 140); i < n; i++){ const [x, z] = at(); plainBox(x, x + .8, z, z + .3, y, y + .55, clutterMats.ac); }   /* condizionatori */
 }
 
+/* Ringhiera di metallo: un piano con le sbarre disegnate (le parti vuote si scartano con alphaTest).
+   Le coordinate della texture seguono i metri, così tutte le ringhiere usano un solo materiale e si uniscono. */
+const bandMat = new THREE.MeshStandardMaterial({ color:'#8f8d90', roughness:.85 });
+let railMat = null;
+function railing(xa, za, xb, zb, y, h){
+  if (!railMat){
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
+    const g = cv.getContext('2d'); g.fillStyle = '#b9bbbe';
+    g.fillRect(0, 0, 128, 10); g.fillRect(0, 112, 128, 8);                       /* corrimano e traverso basso */
+    for (let x = 4; x < 128; x += 16) g.fillRect(x, 0, 4, 120);                   /* una sbarra ogni 12 cm */
+    const t = new THREE.CanvasTexture(cv); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    railMat = new THREE.MeshStandardMaterial({ map:t, alphaTest:.5, side:THREE.DoubleSide, roughness:.5, metalness:.4 });
+  }
+  const L = Math.hypot(xb - xa, zb - za); if (L < 0.05) return;
+  const geo = new THREE.PlaneGeometry(L, h), uv = geo.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * L / 1.0);           /* 1 m di ringhiera = una ripetizione */
+  const m = new THREE.Mesh(geo, railMat);
+  m.position.set((xa + xb) / 2, y + h / 2, (za + zb) / 2); m.rotation.y = -Math.atan2(zb - za, xb - xa);
+  ctxG.add(m); return m;
+}
+
 /* Un edificio: quattro facciate (texture ripetuta per piano), tetto a quadrotti, volumi tecnici.
    Sulla facciata a sud (o.south ≠ false) i balconi sono veri: soletta e parapetto per ogni piano. */
 function block(x0, x1, z0, z1, y0, y1, o){
@@ -210,11 +243,12 @@ function block(x0, x1, z0, z1, y0, y1, o){
   const realBalc = o.south !== false && o.slabs !== false && h > 5, dep = 1.3;
   /* o.loggia: balconi incassati, il parapetto è a filo della facciata (la stecca di casa, sotto il terrazzo) */
   const zs = realBalc && o.loggia ? z1 - dep : z1;
+  const c = o.casa ? 'c' : '';
   const faces = [
-    [w, [ (x0+x1)/2, zs ], 0,            o.south === false ? 'win' : realBalc ? 'loggia' : 'balc'],
-    [w, [ (x0+x1)/2, z0 ], Math.PI,      o.north ? 'balc' : 'win'],
-    [zs - z0, [ x1, (z0+zs)/2 ], Math.PI/2,    'win'],      /* i fianchi arrivano al fondo della loggia */
-    [zs - z0, [ x0, (z0+zs)/2 ], -Math.PI/2,   'win']
+    [w, [ (x0+x1)/2, zs ], 0,            c + (o.south === false ? 'win' : realBalc ? 'loggia' : 'balc')],
+    [w, [ (x0+x1)/2, z0 ], Math.PI,      c + (o.north ? 'balc' : 'win')],
+    [zs - z0, [ x1, (z0+zs)/2 ], Math.PI/2,    c + 'win'],      /* i fianchi arrivano al fondo della loggia */
+    [zs - z0, [ x0, (z0+zs)/2 ], -Math.PI/2,   c + 'win']
   ];
   /* o.gapN / o.gapS: tratto [x0, x1] senza facciata (lì scende il pozzo della scala) */
   const face = (f, x0f, x1f) => {
@@ -234,15 +268,23 @@ function block(x0, x1, z0, z1, y0, y1, o){
   if (realBalc){
     const sm = slabMat(tint), za = zs, zb = zs + dep;
     for (let y = y0 + FLOOR_H; y < y1 - 1; y += FLOOR_H){
+      if (o.casa){
+        /* come nella foto: soletta con la fascia grigio scuro e ringhiera di metallo, aperta anche ai lati */
+        plainBox(x0, x1, za, zb, y - 0.24, y, bandMat);
+        railing(x0, zb - 0.04, x1, zb - 0.04, y, 1.0);
+        if (o.ends && o.ends[0]) railing(x0 + 0.04, za, x0 + 0.04, zb, y, 1.0);
+        if (o.ends && o.ends[1]) railing(x1 - 0.04, za, x1 - 0.04, zb, y, 1.0);
+        continue;
+      }
       plainBox(x0, x1, za, zb, y - 0.2, y, sm);
       plainBox(x0, x1, zb - 0.1, zb, y, y + 1.0, sm);
       if (!o.loggia){ plainBox(x0, x0 + 0.1, za, zb, y, y + 1.0, sm); plainBox(x1 - 0.1, x1, za, zb, y, y + 1.0, sm); }
     }
     /* loggia: muretti pieni alle due estremità, per tutta l’altezza */
-    if (o.loggia){ plainBox(x0, x0 + 0.2, za, zb, y0, y1, sm); plainBox(x1 - 0.2, x1, za, zb, y0, y1, sm); }
+    if (o.loggia && !o.casa){ plainBox(x0, x0 + 0.2, za, zb, y0, y1, sm); plainBox(x1 - 0.2, x1, za, zb, y0, y1, sm); }
   }
   /* zoccolo in pietra al piede dell’edificio */
-  if (y0 <= GROUND_Y + 0.1){
+  if (y0 <= GROUND_Y + 0.1 && !o.casa){
     plainBox(x0 - 0.06, x1 + 0.06, z0 - 0.06, z1 + 0.06, y0, y0 + 0.9, stoneMat);
   }
   /* negozi al piano terra sulla facciata indicata (0 = sud, 1 = nord) */
@@ -335,6 +377,68 @@ function placeLamps(list){
   [poles, heads, poolMesh].forEach(m => { m.userData.keep = true; m.computeBoundingSphere(); ctxG.add(m); });
 }
 
+/* ---------- garage al piano -1 ----------
+   Il palazzo ha i garage un piano sotto la strada: lungo Via Verona e sui due fianchi una corsia scende a −3 m,
+   con le porte basculanti nel muro del palazzo; verso la strada un muretto con la ringhiera bianca.
+   A ovest, dietro il palazzo, la rampa risale al livello della strada. */
+const GARAGE_D = 3, GL = 3.2;            /* profondità e larghezza della corsia (oltre la loggia di 1,3 m) */
+const casaMat = new THREE.MeshStandardMaterial({ color:'#d6cfc9', roughness:.92 });
+function garageHole(xW, xE, north, south, pz){
+  const zf = south - 1.3;
+  return [[xW - GL, north - 9], [xW - GL, south + GL], [xE + GL, south + GL], [xE + GL, pz + 2], [xE, pz + 2], [xE, zf], [xW, zf], [xW, north - 9]];
+}
+function garageDoorsTex(){
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 160;
+  const g = cv.getContext('2d'); g.fillStyle = '#c9c4bd'; g.fillRect(0, 0, 512, 160);
+  for (let i = 0; i < 2; i++){
+    const x = i * 256 + 34, w = 188;
+    g.fillStyle = '#e8e6e1'; g.fillRect(x, 26, w, 134);
+    g.fillStyle = 'rgba(0,0,0,.12)'; for (let y = 34; y < 160; y += 9) g.fillRect(x, y, w, 2);   /* basculante a doghe */
+    g.fillStyle = '#8f8d90'; g.fillRect(x - 6, 20, w + 12, 6);
+    g.fillStyle = '#6a6c70'; g.fillRect(x + w / 2 - 8, 96, 16, 4);
+  }
+  g.fillStyle = 'rgba(0,0,0,.08)'; for (let i = 0; i < 400; i++) g.fillRect(Math.random() * 512, Math.random() * 160, 2, 2);
+  const t = new THREE.CanvasTexture(cv); t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+function garages(xW, xE, north, south, pz, walkMat){
+  const yb = GROUND_Y - GARAGE_D, zf = south - 1.3, zo = south + GL;
+  const conc = new THREE.MeshStandardMaterial({ color:'#b8b3ab', roughness:.95 });
+  const floor = new THREE.MeshStandardMaterial({ color:'#8a8883', roughness:.95 });
+  const doors = garageDoorsTex();
+  /* muro del palazzo con le porte (una coppia ogni 6 m) */
+  const doorWall = (xa, za, xb, zb) => {
+    const L = Math.hypot(xb - xa, zb - za), t = doors.clone(); t.needsUpdate = true; t.repeat.set(L / 6, 1);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(L, GARAGE_D), new THREE.MeshStandardMaterial({ map:t, roughness:.85 }));
+    m.position.set((xa + xb) / 2, yb + GARAGE_D / 2, (za + zb) / 2); m.rotation.y = -Math.atan2(zb - za, xb - xa);
+    ctxG.add(m);
+  };
+  doorWall(xW, zf + 0.02, xE, zf + 0.02);                                     /* sotto i balconi su Via Verona */
+  doorWall(xW - 0.02, north, xW - 0.02, zf);                                  /* fianco ovest (Via Mantova): la faccia guarda a ovest */
+  doorWall(xE + 0.02, zf, xE + 0.02, pz + 2);                                 /* fianco est */
+  /* fondo della corsia e rampa che risale dietro il palazzo */
+  plainBox(xW - GL, xE + GL, zf, zo, yb - 0.1, yb, floor);
+  plainBox(xW - GL, xW, north + 6, zf, yb - 0.1, yb, floor);
+  plainBox(xE, xE + GL, pz + 2, zf, yb - 0.1, yb, floor);
+  const rl = Math.hypot(15, GARAGE_D), ramp = new THREE.Mesh(new THREE.PlaneGeometry(GL, rl), floor);
+  ramp.rotation.order = 'YXZ'; ramp.rotation.x = -Math.PI / 2 + Math.atan2(GARAGE_D, 15);      /* sale verso nord */
+  ramp.position.set(xW - GL / 2, yb + GARAGE_D / 2, north - 9 + 7.5); ctxG.add(ramp);
+  /* muri di contenimento sul lato della strada, sotto il muretto */
+  plainBox(xW - GL - 0.25, xE + GL + 0.25, zo, zo + 0.25, yb, GROUND_Y + 0.45, conc);
+  plainBox(xW - GL - 0.25, xW - GL, north - 9, zo, yb, GROUND_Y + 0.45, conc);
+  plainBox(xE + GL, xE + GL + 0.25, pz + 2, zo, yb, GROUND_Y + 0.45, conc);
+  plainBox(xE, xE + GL, pz + 1.75, pz + 2, yb, GROUND_Y + 0.45, conc);
+  plainBox(xW, xW + 0.25, north - 9, north, yb, GROUND_Y, conc);             /* lato interno della rampa */
+  /* ringhiera bianca sul muretto, come in foto */
+  railing(xW - GL, zo + 0.12, xE + GL, zo + 0.12, GROUND_Y + 0.45, 1.2);
+  railing(xW - GL - 0.12, north - 9, xW - GL - 0.12, zo, GROUND_Y + 0.45, 1.2);
+  railing(xE + GL + 0.12, pz + 2, xE + GL + 0.12, zo, GROUND_Y + 0.45, 1.2);
+  railing(xE, pz + 1.88, xE + GL, pz + 1.88, GROUND_Y + 0.45, 1.2);
+  /* marciapiedi lungo la ringhiera */
+  plainBox(xW - 12, xE + 40, zo + 0.25, zo + 1.8, GROUND_Y, GROUND_Y + 0.12, walkMat);
+  plainBox(xW - GL - 2.3, xW - GL - 0.25, north - 30, zo + 0.25, GROUND_Y, GROUND_Y + 0.12, walkMat);
+}
+
 function buildContext(){
   /* piantina: x 62–675 px, y 38–352 px (balcone a sud fino a 352) */
   const west = X(62), east = X(675), north = Z(97), south = Z(352), mid = Z(300);
@@ -344,14 +448,14 @@ function buildContext(){
   /* sul retro la facciata segue la casa (Google Earth): a filo sotto la veranda della cucina,
      rientra davanti alla stanza a ovest della veranda, poi torna avanti */
   const nx0 = X(58), nx1 = X(132.5), nz = Z(136);
-  block(xW, nx0, north, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true });
-  block(nx0, nx1, nz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true });
+  block(xW, nx0, north, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, casa:true, ends:[true, false] });
+  block(nx0, nx1, nz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, casa:true });
   /* il balcone della camera sta in una rientranza (Google Earth): sotto di lui la facciata è a filo del parapetto,
      a est il corpo vicino sporge verso nord, a ovest l’ala sul retro sporge e poi si allarga verso est */
   const bx0 = X(504), bx1 = X(671), bz = Z(99), pz = north - 1.6;
-  block(nx1, bx0, north, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, gapN:gap });
-  block(bx0, bx1, bz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true });
-  block(bx1, xE, pz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true });
+  block(nx1, bx0, north, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, casa:true, gapN:gap });
+  block(bx0, bx1, bz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, casa:true });
+  block(bx1, xE, pz, south, GROUND_Y, -0.42, { roof:false, north:true, loggia:true, casa:true, ends:[false, true] });
   block(X(297), X(396), Z(38), north, GROUND_Y, -0.42, { roof:false, south:false, gapS:gap });
   /* ala sul retro, perpendicolare, in asse con il vano scala (come da Google Earth): il suo tetto
      arriva al piano dell’attico, così dietro la casa non resta nessuna fessura */
@@ -368,10 +472,10 @@ function buildContext(){
   roofBox(wx1 - 3.5, north - 24, 5, 4, -0.04);
   /* corpi scala che sporgono sulla facciata dei balconi */
   [xW + 12, -32, 30, xE - 12].forEach(cx => {
-    const t = facadeMat('win', 4, -0.42 - GROUND_Y);
-    /* arriva fino al fondo dei balconi incassati */
-    const sb = new THREE.Mesh(new THREE.BoxGeometry(4, -0.42 - GROUND_Y + 2.4, 2.7), [whiteMat, whiteMat, whiteMat, whiteMat, t, whiteMat]);
-    sb.position.set(cx, (GROUND_Y + 1.98) / 2, south + 0.05); ctxG.add(sb);
+    const t = facadeMat('cwin', 4, -0.42 - GROUND_Y + GARAGE_D);
+    /* arriva fino al fondo dei balconi incassati e scende fino al piano dei garage */
+    const sb = new THREE.Mesh(new THREE.BoxGeometry(4, -0.42 - GROUND_Y + 2.4 + GARAGE_D, 2.7), [casaMat, casaMat, casaMat, casaMat, t, casaMat]);
+    sb.position.set(cx, (GROUND_Y - GARAGE_D + 1.98) / 2, south + 0.05); ctxG.add(sb);
   });
   /* copertura attorno all’attico: tetto piano a quadrotti, muretto e volumi tecnici, nessun altro appartamento */
   /* solaio dell’ultimo piano (con il vano scala), bucato dove scende la scala condominiale */
@@ -395,7 +499,11 @@ function buildContext(){
 
   /* suolo urbano: asfalto chiaro, cemento e qualche aiuola */
   const groundMat = new THREE.MeshStandardMaterial({ map:(() => { const t = noiseTex('#a9a69f', ['#9c9992','#b5b2ab','#a3a097'], 9000, 512); t.repeat.set(40, 40); return t; })(), roughness:1 });
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(340, 64), groundMat);
+  /* il suolo ha un buco dove scende la corsia dei garage (vedi garages) */
+  const gsh = new THREE.Shape(); gsh.absarc(0, 0, 340, 0, Math.PI * 2, false);
+  const hole = new THREE.Path(); garageHole(xW, xE, north, south, pz).forEach((p, i) => { if (i) hole.lineTo(p[0], -p[1]); else hole.moveTo(p[0], -p[1]); });
+  gsh.holes.push(hole);
+  const ground = new THREE.Mesh(new THREE.ShapeGeometry(gsh, 64), groundMat);
   ground.rotation.x = -Math.PI/2; ground.position.y = GROUND_Y;
   ctxG.add(ground);
   const asphalt = (() => {
@@ -414,11 +522,10 @@ function buildContext(){
   const roadMat = len => { const t = asphalt.clone(); t.needsUpdate = true; t.repeat.set(len / 40, 1); return new THREE.MeshStandardMaterial({ map:t, roughness:.85 }); };
   const walkMat = new THREE.MeshStandardMaterial({ color:'#c9c5bc', roughness:.95 });
   const green = new THREE.MeshStandardMaterial({ color:'#6f8456', roughness:1 });
-  /* Via Verona: larga, con il marciapiede rialzato lungo il palazzo chiuso da un muretto bianco */
-  const roadZ = south + 10.5;
+  /* Via Verona. Fra la strada e il palazzo, sotto la ringhiera, corre la corsia dei garage un piano più in basso (foto da Via Mantova) */
+  const roadZ = south + 12;
   strip(0, roadZ, 600, 14, 0, roadMat(600));
-  plainBox(xW - 6, xE + 3, south, south + 2.6, GROUND_Y, GROUND_Y + 0.35, walkMat);
-  plainBox(xW - 6, xE + 3, south + 2.6, south + 2.9, GROUND_Y, GROUND_Y + 1.1, whiteMat);
+  garages(xW, xE, north, south, pz, walkMat);
   strip(0, roadZ + 8.6, 600, 3.2, 0, walkMat, 0.12);
   /* incrocio a est con le strisce, strada laterale a ovest */
   const crossX = xE + 26;
@@ -462,7 +569,7 @@ function buildContext(){
   for (let x = xW; x < xE; x += 13) if (x < wx0 - 4 || x > wjx + 3) add(R() < .5 ? 'leccio' : 'ficus', x + R() * 4, north - 6 - R() * 3);   /* dietro il palazzo, non dentro l’ala */
   /* Via Verona: alberi sul marciapiede di fronte e oleandri nelle fioriere lungo il muretto */
   for (let x = -120; x < 120; x += 11) if (Math.abs(x - crossX) > 9 && Math.abs(x - sideX) > 7) add('ficus', x + R() * 2, roadZ + 8.6, 0.75 + R() * .2);
-  for (let x = xW - 4; x < xE + 2; x += 3.2) add('siepe', x, south + 1.9, 0.75 + R() * .25, GROUND_Y + 0.35);
+  for (let x = xW - 8; x < xE + 18; x += 4.5) if (Math.abs(x - crossX) > 9) add('siepe', x, south + GL + 0.9, 0.55 + R() * .15, GROUND_Y + 0.45);   /* fioriere oltre la ringhiera */
   /* il giardino dell’asilo */
   add('palma', xE + 6, south - 0.5, 1.05); add('palma', xE + 17, north - 1.5, 0.95); add('ficus', xE + 10, north - 8);
   for (let i = 0; i < 6; i++) add('siepe', xE + 5 + R() * 12, north - 11 + R() * 8);
