@@ -48,7 +48,7 @@ const st = {
   cmpId: null,           // versione mostrata nel confronto affiancato
   tween: null,           // animazione della camera
   yaw: Math.PI, pitch: 0,
-  lowTarget: 1, showFurn: true, furnType: 'divano',
+  lowTarget: 1, showFurn: true, editLow: true, wallFurn: false, furnType: 'divano',
   viewOnlyFile: false, publishedTs: 0, publishedJson: '',
   planKey: '',           // identifica la piantina pubblicata (per i salvataggi locali)
   artifactApi: null,     // null = non ancora noto, false = non disponibile

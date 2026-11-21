@@ -160,8 +160,18 @@ function setMode(m){
 }
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
-function updateLow(){ st.lowTarget = ($('optLow').checked || st.editing) ? 0.07 : 1; }
+/* Pareti basse: dal menu, oppure in modifica se lo scegli (pulsante Muri alti/bassi, ricordato sul dispositivo).
+   Arredi: nascosti da soli quando modifichi i muri, a meno che non li riaccendi dal pulsante Arredi. */
+const EDIT_LOW_KEY = 'piantina-muri-in-modifica';
+try { st.editLow = localStorage.getItem(EDIT_LOW_KEY) !== 'alti'; } catch(_){ st.editLow = true; }
+function updateLow(){
+  st.lowTarget = ($('optLow').checked || (st.editing && st.editLow)) ? 0.07 : 1;
+  const hideFurn = st.editing && st.level === 'pareti' && !st.wallFurn;
+  MAING.u.visible = st.showFurn && !hideFurn;
+  st.redraw = Math.max(st.redraw || 0, 4); st.shadowDirty = true;
+}
+function setEditLow(on){ st.editLow = on; try { localStorage.setItem(EDIT_LOW_KEY, on ? 'bassi' : 'alti'); } catch(_){} updateLow(); }
 $('optLow').addEventListener('change', updateLow);
-$('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; MAING.u.visible = st.showFurn; });
+$('optFurn').addEventListener('change', e => { st.showFurn = e.target.checked; updateLow(); });
 
-export { applyLook, controls, hintEl, initTheme, preset, setHint, setMode, updateLow };
+export { applyLook, controls, hintEl, initTheme, preset, setEditLow, setHint, setMode, updateLow };

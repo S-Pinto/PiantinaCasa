@@ -4,7 +4,7 @@ import { CMPG, MAING, labelsG, staticG } from './scene.js';
 import { TEXDEF, toTex } from './textures.js';
 import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMatFor, frameMatFor, glassMat, mat, parSide, parTop, stairMat, tileOf, wallMatsFor, wallTop } from './materials.js';
 import { FURN } from './furniture.js';
-import { isH, variantPlan, wallT } from './model.js';
+import { isH, variantPlan, wallRenderEnds, wallT } from './model.js';
 import { syncVariants } from './variants.js';
 import { mergeStatic } from './prestazioni.js';
 import { rebuildSys } from './impianti.js';
@@ -130,7 +130,9 @@ function buildWall(w, wi){
     wallsG.add(grp);
   };
 
-  let cur = a - t/2 - 0.04;
+  /* le estremità chiudono sempre l'incrocio con il muro a cui si agganciano (vedi wallRenderEnds) */
+  const ends = wallRenderEnds(st.plan.walls, w);
+  let cur = ends[0];
   iv.forEach(o => {
     solidPiece(cur, o.lo, 0, H);
     cur = o.hi;
@@ -150,7 +152,7 @@ function buildWall(w, wi){
     }
     else { lintel(o.lo, o.hi, HEAD, H); }
   });
-  solidPiece(cur, b + t/2 + 0.04, 0, H);
+  solidPiece(cur, ends[1], 0, H);
 }
 
 /* Numero di ante di una finestra o porta-finestra: o.n se scelto, altrimenti 2 (come prima) */
