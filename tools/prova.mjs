@@ -81,8 +81,12 @@ async function bundleCheck(){
   fs.writeFileSync(path.join(OUT, 'piantina-via-verona.html'), html);
   const p2 = await ctx.newPage(); const errs = [];
   p2.on('pageerror', e => errs.push(e.message));
-  await ctx.route('http://file.test/', r => r.fulfill({ body:html, contentType:'text/html' }));
-  await p2.goto('http://file.test/'); await p2.waitForTimeout(6000);
+  /* come un file aperto dal disco: c'è solo la pagina, ogni altro indirizzo locale non esiste */
+  await ctx.route(/^http:\/\/file\.test\//, r => new URL(r.request().url()).pathname === '/' ? r.fulfill({ body:html, contentType:'text/html' }) : r.fulfill({ status:404, body:'' }));
+  /* il file costruisce tutta la scena prima dell'evento «load»: su una macchina lenta senza scheda video ci vuole tempo */
+  await p2.goto('http://file.test/', { waitUntil:'domcontentloaded', timeout:120000 });
+  await p2.waitForLoadState('load', { timeout:120000 });
+  await p2.waitForTimeout(6000);
   await p2.screenshot({ path:path.join(OUT, 'file-html.png') });
   errs.forEach(e => problems.push('file HTML scaricato: ' + e));
   await ctx.close();
@@ -93,7 +97,7 @@ try {
   if (!solo || solo === 'computer') await walkthrough('computer', { viewport:{ width:1280, height:800 } });
   if (!solo || solo === 'telefono') await walkthrough('telefono', { ...devices['iPhone 13'] });
   if (!solo || solo === 'file')
-    await bundleCheck();
+    await bundleCheck().catch(e => problems.push('file HTML scaricato: ' + e.message.split('\n')[0]));
 } catch(e){ problems.push('prova interrotta: ' + e.message); }
 await browser.close(); server.close();
 if (problems.length){ console.error('PROBLEMI TROVATI:\n- ' + problems.join('\n- ')); process.exit(1); }
