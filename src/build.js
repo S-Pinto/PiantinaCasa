@@ -6,7 +6,7 @@ import { FLOORS, doorColorMat, doorMat, finishMat, finishMatD, flatMat, floorMat
 import { FURN, separateFaces } from './furniture.js';
 import { isH, variantPlan, wallRenderEnds, wallT } from './model.js';
 import { syncVariants } from './variants.js';
-import { mergeStatic } from './prestazioni.js';
+import { mergeDeep, mergeStatic } from './prestazioni.js';
 import { rebuildSys } from './impianti.js';
 
 /* ------------------------- Utilità di costruzione ------------------------- */
@@ -361,7 +361,7 @@ function rebuild(){
   st.plan.rails.forEach(buildRail);
   st.plan.labels.forEach(buildLabel);
   st.plan.furniture.forEach(buildFurn);
-  mergeStatic(MAING.f); mergeStatic(MAING.w);     /* meno chiamate di disegno, stessa immagine */
+  mergeStatic(MAING.f); mergeStatic(MAING.w); mergeDeep(MAING.u);     /* meno chiamate di disegno, stessa immagine */
   st.rev++; st.shadowDirty = true;     /* misure, luci di casa e ombre si aggiornano */
   rebuildSys();
   syncVariants();
@@ -383,7 +383,7 @@ function buildCmp(){
     floorsG = CMPG.f; wallsG = CMPG.w; furnG = CMPG.u;
     st.plan.floors.forEach(buildFloor); mergedWalls(st.plan.walls).forEach(buildWall); st.plan.columns.forEach(buildColumn);
     st.plan.rails.forEach(buildRail); st.plan.furniture.forEach(buildFurn);
-    mergeStatic(CMPG.f); mergeStatic(CMPG.w);
+    mergeStatic(CMPG.f); mergeStatic(CMPG.w); mergeDeep(CMPG.u);
   } finally {
     st.plan = keep; floorsG = MAING.f; wallsG = MAING.w; furnG = MAING.u;
     colliders.length = nCol; st.shadowDirty = true;
