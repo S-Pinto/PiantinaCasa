@@ -188,6 +188,28 @@ function applyQuality(){
   resize(); sizeComposer();
   roomLightsRev = -1;                // ricostruisco le luci: cambiano le ombre
   st.shadowDirty = true;
+  scheduleWarm();
+}
+/* Quando si accendono le luci di casa (sera) cambia il numero di luci, e la scheda video deve ricompilare
+   tutti i materiali: prima la casa si bloccava 1-2 secondi al primo passaggio a "Notte" o "Tramonto".
+   Poco dopo l'avvio (e dopo un cambio di qualità) preparo in sottofondo anche i materiali dell'altro stato. */
+let warmTimer = 0;
+function scheduleWarm(){
+  clearTimeout(warmTimer);
+  warmTimer = setTimeout(() => {
+    if (!st.plan || !renderer.compileAsync) return;
+    if (roomLightsRev !== st.rev || roomLightsQ !== amb.quality) return scheduleWarm();     /* luci non ancora pronte */
+    const was = roomLights.visible, dome = nightDome.visible;
+    roomLights.visible = !was; nightDome.visible = true;
+    /* con la post-produzione la scena si disegna in un’immagine intermedia (senza tone mapping): i materiali sono altri */
+    const post = composer && QUALITY[amb.quality].post, prevRT = renderer.getRenderTarget();
+    try {
+      if (post) renderer.setRenderTarget(composer.readBuffer);
+      renderer.compileAsync(scene, camera).catch(() => {});
+    }
+    catch(_){}
+    finally { renderer.setRenderTarget(prevRT); roomLights.visible = was; nightDome.visible = dome; }
+  }, 2500);
 }
 function sizeComposer(){
   if (!composer) return;
@@ -250,6 +272,8 @@ function applyAmbLook(){
   skyU.mieCoefficient.value = 0.004 + low * 0.006;
   sky.visible = el > -10;
   nightMat.uniforms.uFade.value = 1 - smooth(-9, 1, el);
+  /* di giorno la cupola delle stelle è trasparente: non la disegno (era uno shader su ogni pixel dello sfondo) */
+  nightDome.visible = nightMat.uniforms.uFade.value > 0.001;
   /* luce diffusa */
   C1.set('#dce8f6'); C2.set('#ffd0a8');
   hemi.color.copy(C1).lerp(C2, low * 0.6).lerp(new THREE.Color('#3a4f7a'), 1 - day);
@@ -293,7 +317,9 @@ function ambFrame(dt){
   if (skyU.time) skyU.time.value += dt;
   /* ombre: ricalcolo solo se qualcosa si muove */
   const ws = MAING.w.scale.y;
-  if (ws !== wallsScale || st.editing || wasEditing){ st.shadowDirty = true; wallsScale = ws; }
+  /* in modifica le ombre si ricalcolano solo quando cambia qualcosa (rebuild e trascinamenti lo segnalano),
+     non a ogni fotogramma: prima il sole e le luci con ombra ridisegnavano la casa 20 volte per fotogramma */
+  if (ws !== wallsScale || st.editing !== wasEditing){ st.shadowDirty = true; wallsScale = ws; }
   wasEditing = st.editing;
   if (st.cmpId) renderer.shadowMap.autoUpdate = true;
   else { renderer.shadowMap.autoUpdate = false; if (st.shadowDirty){ renderer.shadowMap.needsUpdate = true; st.shadowDirty = false; } }
